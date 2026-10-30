@@ -105,3 +105,4 @@ export function registerAwarenessHandlers(io, socket) {
     }
   });
 }
+

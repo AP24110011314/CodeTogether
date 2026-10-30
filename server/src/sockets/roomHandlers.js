@@ -1,7 +1,9 @@
 import { Room } from '../models/Room.js';
+import { Message } from '../models/Message.js';
 import { can, getUserRoleInRoom } from '../services/permissions.js';
 import { yjsManager } from '../services/yjsManager.js';
 import { sendInitialAwareness, removeSocketAwareness } from './awarenessHandlers.js';
+import { broadcastSystemMessage } from './chatHandlers.js';
 import logger from '../utils/logger.js';
 
 export async function getRoomOnlineMembers(io, roomId) {
@@ -103,6 +105,27 @@ export function registerRoomHandlers(io, socket) {
       // Send existing awareness states to joining socket
       sendInitialAwareness(socket, roomId);
 
+      // Broadcast system join chat message
+      await broadcastSystemMessage(io, roomId, `${user.name} joined the room`);
+
+      // Load recent room messages (up to 50, chronological)
+      const recentMessages = await Message.find({ roomId })
+        .sort({ createdAt: -1 })
+        .limit(50)
+        .populate('userId', 'name avatarColor')
+        .lean();
+
+      const formattedMessages = recentMessages.reverse().map((m) => ({
+        id: m._id.toString(),
+        roomId: m.roomId.toString(),
+        userId: m.userId?._id ? m.userId._id.toString() : (m.userId?.toString() || null),
+        name: m.userId?.name || (m.type === 'system' ? 'System' : 'Unknown'),
+        color: m.userId?.avatarColor || '#64748b',
+        type: m.type,
+        text: m.text,
+        createdAt: m.createdAt.toISOString(),
+      }));
+
       if (typeof callback === 'function') {
         callback({
           ok: true,
@@ -117,7 +140,7 @@ export function registerRoomHandlers(io, socket) {
           },
           role,
           members,
-          messages: [],
+          messages: formattedMessages,
         });
       }
     } catch (err) {
@@ -135,6 +158,7 @@ export function registerRoomHandlers(io, socket) {
       if (!roomId) return;
 
       removeSocketAwareness(io, socket, roomId);
+      await broadcastSystemMessage(io, roomId, `${user.name} left the room`);
       socket.leave(`room:${roomId}`);
       socket.data.rooms.delete(roomId);
       yjsManager.releaseDoc(roomId);

@@ -52,10 +52,10 @@ Work through phases in order. Tick every box and pass the acceptance test before
 - **Accept:** colored cursor and label follow the other user; disappears ≤5 s after tab close.
 
 ## Phase 6 — Chat (1.5 days)
-- [ ] `Message` model; REST `GET /rooms/:id/messages?before=&limit=`
-- [ ] Socket `chat:send` → validate (≤2000 chars), persist, broadcast `chat:message`
-- [ ] ChatPanel: auto-scroll, infinite scroll upward, system messages, unread badge when collapsed
-- [ ] Rate limit: 10 messages / 10 s per user
+- [x] `Message` model; REST `GET /rooms/:id/messages?before=&limit=`
+- [x] Socket `chat:send` → validate (≤2000 chars), persist, broadcast `chat:message`
+- [x] ChatPanel: auto-scroll, infinite scroll upward, system messages, unread badge when collapsed
+- [x] Rate limit: 10 messages / 10 s per user
 - **Accept:** messages appear live, history persists after refresh.
 
 ## Phase 7 — Saved Snippets (2 days)

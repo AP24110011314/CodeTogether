@@ -389,3 +389,4 @@ describe('Phase 5 — Presence and Cursors (Awareness)', () => {
     clientA.disconnect();
   });
 });
+

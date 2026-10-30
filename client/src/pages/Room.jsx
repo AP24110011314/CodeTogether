@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useRoomStore } from '../store/roomStore.js';
 import { useAuthStore } from '../store/authStore.js';
 import { Toolbar } from '../components/editor/Toolbar.jsx';
 import { CodeEditor } from '../components/editor/CodeEditor.jsx';
 import { UserList } from '../components/presence/UserList.jsx';
+import { ChatPanel } from '../components/chat/ChatPanel.jsx';
 import { ShareModal } from '../components/room/ShareModal.jsx';
 import { MembersModal } from '../components/room/MembersModal.jsx';
 import { initSocket, disconnectSocket, getSocket } from '../lib/socket.js';
@@ -26,6 +27,11 @@ export default function Room() {
     loadRoom,
     setRoom,
     setMembers,
+    setMessages,
+    addMessage,
+    unreadMessagesCount,
+    incrementUnread,
+    clearUnread,
     setLanguage,
     setConnectionStatus,
   } = useRoomStore();
@@ -35,6 +41,9 @@ export default function Room() {
 
   // Tabs for right side panel and bottom panel
   const [sideTab, setSideTab] = useState('chat'); // 'chat' | 'users'
+  const sideTabRef = useRef(sideTab);
+  sideTabRef.current = sideTab;
+
   const [bottomTab, setBottomTab] = useState('output'); // 'output' | 'stdin' | 'history'
   const [isBottomOpen, setIsBottomOpen] = useState(true);
 
@@ -72,6 +81,7 @@ export default function Room() {
           if (ack?.ok) {
             setRoom(ack.room, ack.role);
             if (ack.members) setMembers(ack.members);
+            if (ack.messages) setMessages(ack.messages);
           }
         }
       );
@@ -79,6 +89,13 @@ export default function Room() {
 
     socket.on('disconnect', () => {
       setConnectionStatus('disconnected');
+    });
+
+    socket.on('chat:message', (msg) => {
+      addMessage(msg);
+      if (sideTabRef.current !== 'chat') {
+        incrementUnread();
+      }
     });
 
     socket.on('room:members', (updatedMembers) => {
@@ -111,7 +128,21 @@ export default function Room() {
       disconnectSocket();
       setConnectionStatus('disconnected');
     };
-  }, [accessToken, room?.id, slug, searchParams, setRoom, setMembers, setLanguage, setConnectionStatus, user?.id, navigate]);
+  }, [
+    accessToken,
+    room?.id,
+    slug,
+    searchParams,
+    setRoom,
+    setMembers,
+    setMessages,
+    addMessage,
+    incrementUnread,
+    setLanguage,
+    setConnectionStatus,
+    user?.id,
+    navigate,
+  ]);
 
   if (isLoading) {
     return (
@@ -242,13 +273,19 @@ export default function Room() {
         <div style={styles.sidePanel}>
           <div style={styles.sideHeader}>
             <button
-              onClick={() => setSideTab('chat')}
+              onClick={() => {
+                setSideTab('chat');
+                clearUnread();
+              }}
               style={{
                 ...styles.sideTab,
                 ...(sideTab === 'chat' ? styles.activeSideTab : {}),
               }}
             >
-              💬 Chat
+              <span>💬 Chat</span>
+              {unreadMessagesCount > 0 && sideTab !== 'chat' && (
+                <span style={styles.unreadBadge}>{unreadMessagesCount}</span>
+              )}
             </button>
             <button
               onClick={() => setSideTab('users')}
@@ -262,26 +299,7 @@ export default function Room() {
           </div>
 
           <div style={styles.sideContent}>
-            {sideTab === 'chat' ? (
-              <div style={styles.chatPlaceholder}>
-                <div style={styles.emptyNotice}>
-                  <span>Room session active. Real-time chat will be connected in Phase 6.</span>
-                </div>
-                <div style={styles.chatInputRow}>
-                  <input
-                    type="text"
-                    placeholder="Send a message to room..."
-                    disabled
-                    style={styles.chatInput}
-                  />
-                  <button disabled style={styles.sendButton}>
-                    Send
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <UserList />
-            )}
+            {sideTab === 'chat' ? <ChatPanel /> : <UserList />}
           </div>
         </div>
       </div>
@@ -406,6 +424,18 @@ const styles = {
     fontWeight: '600',
     cursor: 'pointer',
     textAlign: 'center',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '4px',
+  },
+  unreadBadge: {
+    backgroundColor: '#ef4444',
+    color: '#ffffff',
+    fontSize: '10px',
+    fontWeight: '700',
+    padding: '1px 6px',
+    borderRadius: '10px',
   },
   activeSideTab: {
     color: '#38bdf8',
@@ -416,8 +446,8 @@ const styles = {
     flex: 1,
     display: 'flex',
     flexDirection: 'column',
-    overflowY: 'auto',
-    padding: '12px',
+    overflow: 'hidden',
+    padding: 0,
   },
   chatPlaceholder: {
     flex: 1,

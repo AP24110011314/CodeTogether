@@ -4,6 +4,7 @@ import { User } from '../models/User.js';
 import { registerRoomHandlers, getRoomOnlineMembers } from './roomHandlers.js';
 import { registerYjsHandlers } from './yjsHandlers.js';
 import { registerAwarenessHandlers, removeSocketAwareness } from './awarenessHandlers.js';
+import { registerChatHandlers, broadcastSystemMessage } from './chatHandlers.js';
 import { yjsManager } from '../services/yjsManager.js';
 import logger from '../utils/logger.js';
 
@@ -56,6 +57,7 @@ export function setupSockets(io) {
     registerRoomHandlers(io, socket);
     registerYjsHandlers(io, socket);
     registerAwarenessHandlers(io, socket);
+    registerChatHandlers(io, socket);
 
     socket.on('disconnect', async (reason) => {
       logger.info({ userId: user.id, socketId: socket.id, reason }, 'User disconnected from socket');
@@ -67,11 +69,14 @@ export function setupSockets(io) {
           // Remove awareness states and notify room
           removeSocketAwareness(io, socket, roomId);
 
+          // Broadcast system leave message
+          await broadcastSystemMessage(io, roomId, `${user.name} left the room`);
+
           yjsManager.releaseDoc(roomId);
           const members = await getRoomOnlineMembers(io, roomId);
           io.to(`room:${roomId}`).emit('room:members', members);
         } catch (err) {
-          logger.error({ err, roomId }, 'Error updating members on socket disconnect');
+          logger.error({ err, roomId }, 'Error updating members/chat on socket disconnect');
         }
       }
     });

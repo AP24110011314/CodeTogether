@@ -32,6 +32,9 @@ export const useRoomStore = create((set, get) => ({
   error: null,
   members: [],
   awarenessUsers: [],
+  messages: [],
+  unreadMessagesCount: 0,
+  hasMoreMessages: true,
   connectionStatus: 'disconnected', // 'disconnected' | 'connecting' | 'connected'
 
   preferences: {
@@ -74,6 +77,30 @@ export const useRoomStore = create((set, get) => ({
   setMembers: (members) => set({ members }),
 
   setAwarenessUsers: (awarenessUsers) => set({ awarenessUsers }),
+
+  setMessages: (messages) => set({ messages }),
+
+  addMessage: (message) =>
+    set((state) => {
+      if (state.messages.some((m) => m.id === message.id)) {
+        return state;
+      }
+      return { messages: [...state.messages, message] };
+    }),
+
+  prependMessages: (olderMessages) =>
+    set((state) => {
+      const existingIds = new Set(state.messages.map((m) => m.id));
+      const newOlder = olderMessages.filter((m) => !existingIds.has(m.id));
+      return { messages: [...newOlder, ...state.messages] };
+    }),
+
+  setHasMoreMessages: (hasMoreMessages) => set({ hasMoreMessages }),
+
+  incrementUnread: () =>
+    set((state) => ({ unreadMessagesCount: state.unreadMessagesCount + 1 })),
+
+  clearUnread: () => set({ unreadMessagesCount: 0 }),
 
   setConnectionStatus: (connectionStatus) => set({ connectionStatus }),
 
