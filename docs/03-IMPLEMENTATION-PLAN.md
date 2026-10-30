@@ -36,12 +36,12 @@ Work through phases in order. Tick every box and pass the acceptance test before
 - **Accept:** two browsers join the same room and see each other in the member list; unauthorized join gets `room:error`.
 
 ## Phase 4 — Yjs Real-Time Sync (4 days) ★ core
-- [ ] Server `yjsManager`: `getDoc(roomId)` loads snapshot from `Document`, caches `Y.Doc`, ref-counts connections, destroys after idle
-- [ ] Client `SocketIOProvider` (doc 06): sync step 1/2, incremental updates, reconnect resync, origin tagging to avoid echo loops
-- [ ] Bind with `MonacoBinding(yText, model, new Set([editor]), awareness)`
-- [ ] Server rejects updates from viewers
-- [ ] Debounced snapshot (5 s) and flush on last disconnect; store `Y.encodeStateAsUpdate`
-- [ ] Optional compaction: re-encode doc fresh on snapshot to trim history
+- [x] Server `yjsManager`: `getDoc(roomId)` loads snapshot from `Document`, caches `Y.Doc`, ref-counts connections, destroys after idle
+- [x] Client `SocketIOProvider` (doc 06): sync step 1/2, incremental updates, reconnect resync, origin tagging to avoid echo loops
+- [x] Bind with `MonacoBinding(yText, model, new Set([editor]), awareness)`
+- [x] Server rejects updates from viewers
+- [x] Debounced snapshot (5 s) and flush on last disconnect; store `Y.encodeStateAsUpdate`
+- [x] Optional compaction: re-encode doc fresh on snapshot to trim history
 - **Accept:** (a) two clients type simultaneously → identical text; (b) kill the network on one client, type, reconnect → merged; (c) restart server → text restored from Mongo.
 
 ## Phase 5 — Presence and Cursors (2 days)

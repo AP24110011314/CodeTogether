@@ -13,6 +13,7 @@ const io = new Server(server, {
     origin: env.CLIENT_URL,
     credentials: true,
   },
+  maxHttpBufferSize: 5e6, // 5 MB (allows security guard to intercept and reject oversized payloads)
 });
 
 setupSockets(io);

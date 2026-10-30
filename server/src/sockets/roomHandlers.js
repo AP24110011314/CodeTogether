@@ -1,5 +1,6 @@
 import { Room } from '../models/Room.js';
 import { can, getUserRoleInRoom } from '../services/permissions.js';
+import { yjsManager } from '../services/yjsManager.js';
 import logger from '../utils/logger.js';
 
 export async function getRoomOnlineMembers(io, roomId) {
@@ -131,6 +132,7 @@ export function registerRoomHandlers(io, socket) {
 
       socket.leave(`room:${roomId}`);
       socket.data.rooms.delete(roomId);
+      yjsManager.releaseDoc(roomId);
 
       const members = await getRoomOnlineMembers(io, roomId);
       io.to(`room:${roomId}`).emit('room:members', members);
@@ -171,3 +173,4 @@ export function registerRoomHandlers(io, socket) {
     }
   });
 }
+
