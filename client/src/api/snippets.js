@@ -24,3 +24,4 @@ export async function deleteSnippetApi(id) {
   const response = await http.delete(`/snippets/${id}`);
   return response.data;
 }
+

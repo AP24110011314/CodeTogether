@@ -1,4 +1,5 @@
 import React from 'react';
+import { useRoomStore } from '../../store/roomStore.js';
 
 export const SUPPORTED_LANGUAGES = [
   { id: 'javascript', label: 'JavaScript' },
@@ -17,6 +18,9 @@ export const SUPPORTED_LANGUAGES = [
 ];
 
 export function LanguageSelect({ value, onChange, disabled }) {
+  const { availableLanguages } = useRoomStore();
+  const availableSet = new Set((availableLanguages || []).map((l) => l.id.toLowerCase()));
+
   return (
     <select
       value={value}
@@ -24,11 +28,17 @@ export function LanguageSelect({ value, onChange, disabled }) {
       disabled={disabled}
       style={styles.select}
     >
-      {SUPPORTED_LANGUAGES.map((lang) => (
-        <option key={lang.id} value={lang.id}>
-          {lang.label}
-        </option>
-      ))}
+      {SUPPORTED_LANGUAGES.map((lang) => {
+        const isSupportedByRunner = ['javascript', 'python', 'typescript', 'c', 'cpp', 'java', 'go'].includes(lang.id);
+        const hasHostRunner = availableSet.size === 0 || availableSet.has(lang.id.toLowerCase());
+        const suffix = isSupportedByRunner && !hasHostRunner ? ' (No runtime)' : '';
+
+        return (
+          <option key={lang.id} value={lang.id}>
+            {lang.label}{suffix}
+          </option>
+        );
+      })}
     </select>
   );
 }

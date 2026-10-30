@@ -67,13 +67,13 @@ Work through phases in order. Tick every box and pass the acceptance test before
 
 ## Phase 8 — Code Execution Sandbox (5 days) ★ core
 Follow doc 07 exactly.
-- [ ] `languages.js` config (command, file name, compile step, timeout)
-- [ ] `runner.js`: temp dir per run, spawn with stripped env, `timeout`, memory polling, stdout/stderr caps, process-group kill, cleanup in `finally`
-- [ ] Language availability probe at startup (`which node python3 gcc ...`); `/api/runs/languages` returns only available ones
-- [ ] `runQueue.js`: `p-queue` concurrency 2, max pending 20, per-user rate limit (5 runs / min)
-- [ ] `ExecutionRun` model; socket events `run:start`, `run:queued`, `run:started`, `run:result`
-- [ ] Client: Run button (Cmd/Ctrl+Enter), stdin textarea, OutputPanel with stdout/stderr tabs, exit code, duration, run-history list, loading and kill states
-- [ ] Adversarial tests (doc 09 list)
+- [x] `languages.js` config (command, file name, compile step, timeout)
+- [x] `runner.js`: temp dir per run, spawn with stripped env, `timeout`, memory polling, stdout/stderr caps, process-group kill, cleanup in `finally`
+- [x] Language availability probe at startup (`which node python3 gcc ...`); `/api/runs/languages` returns only available ones
+- [x] `runQueue.js`: `p-queue` concurrency 2, max pending 20, per-user rate limit (5 runs / min)
+- [x] `ExecutionRun` model; socket events `run:start`, `run:queued`, `run:started`, `run:result`
+- [x] Client: Run button (Cmd/Ctrl+Enter), stdin textarea, OutputPanel with stdout/stderr tabs, exit code, duration, run-history list, loading and kill states
+- [x] Adversarial tests (doc 09 list)
 - **Accept:** infinite loop → "Time limit exceeded"; memory bomb killed; 10 MB print truncated; output visible to all room members.
 
 ## Phase 9 — Room Management and Sharing (1.5 days)

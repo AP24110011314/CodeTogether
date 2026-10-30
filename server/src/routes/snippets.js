@@ -44,3 +44,4 @@ router.patch('/:id', validate(updateSnippetSchema), updateSnippet);
 router.delete('/:id', deleteSnippet);
 
 export default router;
+

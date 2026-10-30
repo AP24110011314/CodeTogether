@@ -5,6 +5,7 @@ import { registerRoomHandlers, getRoomOnlineMembers } from './roomHandlers.js';
 import { registerYjsHandlers } from './yjsHandlers.js';
 import { registerAwarenessHandlers, removeSocketAwareness } from './awarenessHandlers.js';
 import { registerChatHandlers, broadcastSystemMessage } from './chatHandlers.js';
+import { registerRunHandlers } from './runHandlers.js';
 import { yjsManager } from '../services/yjsManager.js';
 import logger from '../utils/logger.js';
 
@@ -58,6 +59,7 @@ export function setupSockets(io) {
     registerYjsHandlers(io, socket);
     registerAwarenessHandlers(io, socket);
     registerChatHandlers(io, socket);
+    registerRunHandlers(io, socket);
 
     socket.on('disconnect', async (reason) => {
       logger.info({ userId: user.id, socketId: socket.id, reason }, 'User disconnected from socket');

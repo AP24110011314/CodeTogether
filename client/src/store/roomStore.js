@@ -36,6 +36,12 @@ export const useRoomStore = create((set, get) => ({
   unreadMessagesCount: 0,
   hasMoreMessages: true,
   connectionStatus: 'disconnected', // 'disconnected' | 'connecting' | 'connected'
+  availableLanguages: [],
+  runs: [],
+  activeRun: null, // { runId, status: 'queued' | 'running', position, by }
+  latestRunResult: null,
+  runError: null,
+  stdin: '',
 
   preferences: {
     theme: getInitialPreference('theme', 'vs-dark'),
@@ -103,6 +109,23 @@ export const useRoomStore = create((set, get) => ({
   clearUnread: () => set({ unreadMessagesCount: 0 }),
 
   setConnectionStatus: (connectionStatus) => set({ connectionStatus }),
+
+  setAvailableLanguages: (availableLanguages) => set({ availableLanguages }),
+
+  setStdin: (stdin) => set({ stdin }),
+
+  setRuns: (runs) => set({ runs }),
+
+  addRun: (run) =>
+    set((state) => ({
+      runs: [run, ...state.runs.filter((r) => r.id !== run.id)],
+    })),
+
+  setActiveRun: (activeRun) => set({ activeRun }),
+
+  setLatestRunResult: (latestRunResult) => set({ latestRunResult }),
+
+  setRunError: (runError) => set({ runError }),
 
   setRoom: (room, role) =>
     set({

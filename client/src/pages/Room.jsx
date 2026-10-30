@@ -10,6 +10,8 @@ import { ShareModal } from '../components/room/ShareModal.jsx';
 import { MembersModal } from '../components/room/MembersModal.jsx';
 import { SaveSnippetModal } from '../components/snippet/SaveSnippetModal.jsx';
 import { InsertSnippetModal } from '../components/snippet/InsertSnippetModal.jsx';
+import { OutputPanel } from '../components/editor/OutputPanel.jsx';
+import { getLanguagesApi, getRoomRunsApi } from '../api/runs.js';
 import { initSocket, disconnectSocket, getSocket } from '../lib/socket.js';
 
 export default function Room() {
@@ -34,6 +36,15 @@ export default function Room() {
     unreadMessagesCount,
     incrementUnread,
     clearUnread,
+    language,
+    stdin,
+    activeRun,
+    setActiveRun,
+    setLatestRunResult,
+    addRun,
+    setRuns,
+    setAvailableLanguages,
+    setRunError,
     setLanguage,
     setConnectionStatus,
   } = useRoomStore();
@@ -74,17 +85,50 @@ export default function Room() {
     }
   };
 
-  // Keyboard shortcut Cmd/Ctrl+S to save snippet
+  const handleRunCode = () => {
+    if (role === 'viewer') return;
+    const socket = getSocket();
+    if (!socket || !socket.connected || !room?.id) return;
+
+    setRunError(null);
+    setActiveRun({
+      status: 'queued',
+      position: 1,
+      by: { id: user?.id, name: user?.name, color: user?.avatarColor },
+    });
+    setBottomTab('output');
+    setIsBottomOpen(true);
+
+    socket.emit(
+      'run:start',
+      {
+        roomId: room.id,
+        language: language || room.language || 'javascript',
+        stdin: stdin || '',
+      },
+      (ack) => {
+        if (ack && !ack.ok) {
+          setActiveRun(null);
+          setRunError({ message: ack.error || 'Execution rejected' });
+        }
+      }
+    );
+  };
+
+  // Keyboard shortcuts: Cmd/Ctrl+S (Save snippet), Cmd/Ctrl+Enter (Run code)
   useEffect(() => {
     const handleKeyDown = (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
         e.preventDefault();
         handleOpenSaveSnippet();
+      } else if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+        e.preventDefault();
+        handleRunCode();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [role, room?.id, language, stdin, user]);
 
   // Tabs for right side panel and bottom panel
   const [sideTab, setSideTab] = useState('chat'); // 'chat' | 'users'
@@ -93,6 +137,26 @@ export default function Room() {
 
   const [bottomTab, setBottomTab] = useState('output'); // 'output' | 'stdin' | 'history'
   const [isBottomOpen, setIsBottomOpen] = useState(true);
+
+  // Fetch available language runtimes
+  useEffect(() => {
+    getLanguagesApi()
+      .then((data) => {
+        if (data?.languages) setAvailableLanguages(data.languages);
+      })
+      .catch((err) => console.warn('Failed to load sandbox languages:', err));
+  }, [setAvailableLanguages]);
+
+  // Fetch past run history for this room
+  useEffect(() => {
+    if (room?.id) {
+      getRoomRunsApi(room.id)
+        .then((data) => {
+          if (data?.runs) setRuns(data.runs);
+        })
+        .catch((err) => console.warn('Failed to load room run history:', err));
+    }
+  }, [room?.id, setRuns]);
 
   // Initial room REST fetch
   useEffect(() => {
@@ -168,6 +232,43 @@ export default function Room() {
       console.warn('Room socket error:', err);
     });
 
+    socket.on('run:queued', (payload) => {
+      setActiveRun({
+        runId: payload.runId,
+        status: 'queued',
+        position: payload.position,
+        by: payload.by,
+      });
+      setRunError(null);
+      setBottomTab('output');
+      setIsBottomOpen(true);
+    });
+
+    socket.on('run:started', (payload) => {
+      setActiveRun({
+        runId: payload.runId,
+        status: 'running',
+        by: payload.by,
+      });
+      setRunError(null);
+    });
+
+    socket.on('run:result', (payload) => {
+      setActiveRun(null);
+      setLatestRunResult(payload);
+      addRun(payload);
+      setRunError(null);
+      setBottomTab('output');
+      setIsBottomOpen(true);
+    });
+
+    socket.on('run:rejected', (payload) => {
+      setActiveRun(null);
+      setRunError(payload);
+      setBottomTab('output');
+      setIsBottomOpen(true);
+    });
+
     return () => {
       if (socket.connected) {
         socket.emit('room:leave', { roomId: room.id });
@@ -187,6 +288,10 @@ export default function Room() {
     incrementUnread,
     setLanguage,
     setConnectionStatus,
+    setActiveRun,
+    setLatestRunResult,
+    addRun,
+    setRunError,
     user?.id,
     navigate,
   ]);
@@ -233,6 +338,7 @@ export default function Room() {
         onMembersClick={() => setIsMembersOpen(true)}
         onSaveSnippetClick={handleOpenSaveSnippet}
         onInsertSnippetClick={() => setIsInsertSnippetOpen(true)}
+        onRunClick={handleRunCode}
       />
 
       <div style={styles.workspace}>
@@ -242,80 +348,13 @@ export default function Room() {
             <CodeEditor onEditorMount={(ed) => { editorRef.current = ed; }} />
           </div>
 
-          {/* Bottom Panel */}
-          <div style={styles.bottomPanel}>
-            <div style={styles.bottomHeader}>
-              <div style={styles.bottomTabs}>
-                <button
-                  onClick={() => {
-                    setBottomTab('output');
-                    setIsBottomOpen(true);
-                  }}
-                  style={{
-                    ...styles.panelTab,
-                    ...(isBottomOpen && bottomTab === 'output' ? styles.activePanelTab : {}),
-                  }}
-                >
-                  Output
-                </button>
-                <button
-                  onClick={() => {
-                    setBottomTab('stdin');
-                    setIsBottomOpen(true);
-                  }}
-                  style={{
-                    ...styles.panelTab,
-                    ...(isBottomOpen && bottomTab === 'stdin' ? styles.activePanelTab : {}),
-                  }}
-                >
-                  Stdin
-                </button>
-                <button
-                  onClick={() => {
-                    setBottomTab('history');
-                    setIsBottomOpen(true);
-                  }}
-                  style={{
-                    ...styles.panelTab,
-                    ...(isBottomOpen && bottomTab === 'history' ? styles.activePanelTab : {}),
-                  }}
-                >
-                  Run History
-                </button>
-              </div>
-
-              <button
-                onClick={() => setIsBottomOpen(!isBottomOpen)}
-                style={styles.collapseButton}
-                title={isBottomOpen ? 'Collapse panel' : 'Expand panel'}
-              >
-                {isBottomOpen ? '▼' : '▲'}
-              </button>
-            </div>
-
-            {isBottomOpen && (
-              <div style={styles.bottomContent}>
-                {bottomTab === 'output' && (
-                  <div style={styles.outputBox}>
-                    <span style={{ color: '#64748b' }}>
-                      Ready. Click "▶ Run" in toolbar or press Cmd/Ctrl+Enter to execute.
-                    </span>
-                  </div>
-                )}
-                {bottomTab === 'stdin' && (
-                  <textarea
-                    placeholder="Provide standard input (stdin) for program execution..."
-                    style={styles.stdinTextarea}
-                  />
-                )}
-                {bottomTab === 'history' && (
-                  <div style={styles.outputBox}>
-                    <span style={{ color: '#64748b' }}>No execution runs yet.</span>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+          {/* Bottom Execution Panel */}
+          <OutputPanel
+            isBottomOpen={isBottomOpen}
+            setIsBottomOpen={setIsBottomOpen}
+            bottomTab={bottomTab}
+            setBottomTab={setBottomTab}
+          />
         </div>
 
         {/* Right Side Panel: Chat & Presence */}

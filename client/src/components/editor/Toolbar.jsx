@@ -9,6 +9,7 @@ export function Toolbar({
   onMembersClick,
   onSaveSnippetClick,
   onInsertSnippetClick,
+  onRunClick,
 }) {
   const navigate = useNavigate();
   const {
@@ -16,6 +17,7 @@ export function Toolbar({
     role,
     language,
     members,
+    activeRun,
     preferences,
     setTheme,
     setFontSize,
@@ -24,6 +26,7 @@ export function Toolbar({
   } = useRoomStore();
 
   const isViewer = role === 'viewer';
+  const isRunning = Boolean(activeRun && (activeRun.status === 'running' || activeRun.status === 'queued'));
 
   const handleLanguageChange = (newLang) => {
     setLanguage(newLang);
@@ -130,15 +133,27 @@ export function Toolbar({
           Save Snippet
         </button>
         <button
-          disabled={isViewer}
+          onClick={onRunClick}
+          disabled={isViewer || isRunning}
           style={{
             ...styles.runButton,
-            opacity: isViewer ? 0.5 : 1,
-            cursor: isViewer ? 'not-allowed' : 'pointer',
+            opacity: isViewer || isRunning ? 0.6 : 1,
+            cursor: isViewer || isRunning ? 'not-allowed' : 'pointer',
+            backgroundColor: isRunning ? '#eab308' : '#22c55e',
           }}
-          title={isViewer ? 'Viewers cannot execute code' : 'Execute code (Cmd/Ctrl+Enter)'}
+          title={
+            isViewer
+              ? 'Viewers cannot execute code'
+              : isRunning
+              ? 'Execution in progress...'
+              : 'Execute code (Cmd/Ctrl+Enter)'
+          }
         >
-          ▶ Run
+          {isRunning ? (
+            <span>⏳ {activeRun.status === 'queued' ? 'Queued' : 'Running'}</span>
+          ) : (
+            '▶ Run'
+          )}
         </button>
         <button
           onClick={onShareClick}

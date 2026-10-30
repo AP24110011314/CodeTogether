@@ -12,6 +12,7 @@ import {
   removeMember,
 } from '../controllers/rooms.js';
 import { getRoomMessages } from '../controllers/messages.js';
+import { getRoomRuns } from '../controllers/runs.js';
 import { authenticate } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 
@@ -48,6 +49,7 @@ router.post('/', validate(createRoomSchema), createRoom);
 router.get('/', getRooms);
 router.post('/join', validate(joinRoomSchema), joinRoom);
 router.get('/:id/messages', getRoomMessages);
+router.get('/:id/runs', getRoomRuns);
 router.get('/:slug', getRoomBySlug);
 router.patch('/:id', validate(updateRoomSchema), updateRoom);
 router.delete('/:id', deleteRoom);
