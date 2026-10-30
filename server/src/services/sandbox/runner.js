@@ -300,3 +300,4 @@ export async function runLocal({ language, code, stdin = '' }) {
     }
   }
 }
+

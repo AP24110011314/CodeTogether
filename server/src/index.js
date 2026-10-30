@@ -16,6 +16,8 @@ const io = new Server(server, {
   maxHttpBufferSize: 5e6, // 5 MB (allows security guard to intercept and reject oversized payloads)
 });
 
+app.set('io', io);
+
 setupSockets(io);
 
 export { io, server };

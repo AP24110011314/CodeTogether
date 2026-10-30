@@ -1,8 +1,13 @@
 import mongoose from 'mongoose';
 import { Room } from '../models/Room.js';
 import { Document } from '../models/Document.js';
+import { User } from '../models/User.js';
 import { generateSlug, generateToken } from '../utils/slug.js';
 import { getUserRoleInRoom } from '../services/permissions.js';
+import { getRoomOnlineMembers } from '../sockets/roomHandlers.js';
+import { broadcastSystemMessage } from '../sockets/chatHandlers.js';
+import { removeSocketAwareness } from '../sockets/awarenessHandlers.js';
+import { yjsManager } from '../services/yjsManager.js';
 
 export async function createRoom(req, res, next) {
   try {
@@ -207,6 +212,27 @@ export async function deleteRoom(req, res, next) {
       await mongoose.models.ExecutionRun.deleteMany({ roomId: room._id });
     }
 
+    const roomIdStr = room._id.toString();
+    yjsManager.docs.delete(roomIdStr);
+
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`room:${roomIdStr}`).emit('room:deleted', {
+        roomId: roomIdStr,
+        message: 'Room has been deleted by owner',
+      });
+      const roomSocketSet = io.sockets.adapter.rooms.get(`room:${roomIdStr}`);
+      if (roomSocketSet) {
+        for (const socketId of Array.from(roomSocketSet)) {
+          const s = io.sockets.sockets.get(socketId);
+          if (s) {
+            s.leave(`room:${roomIdStr}`);
+            s.data?.rooms?.delete(roomIdStr);
+          }
+        }
+      }
+    }
+
     await Room.findByIdAndDelete(id);
 
     return res.status(200).json({ message: 'Room deleted successfully' });
@@ -353,6 +379,17 @@ export async function updateMemberRole(req, res, next) {
     member.role = role;
     await room.save();
 
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`room:${id}`).emit('room:role-changed', {
+        userId: targetUserId,
+        role,
+      });
+
+      const onlineMembers = await getRoomOnlineMembers(io, id);
+      io.to(`room:${id}`).emit('room:members', onlineMembers);
+    }
+
     return res.status(200).json({
       userId: targetUserId,
       role,
@@ -400,6 +437,33 @@ export async function removeMember(req, res, next) {
 
     room.members = room.members.filter((m) => m.userId.toString() !== targetUserId.toString());
     await room.save();
+
+    const io = req.app.get('io');
+    if (io) {
+      const roomSocketSet = io.sockets.adapter.rooms.get(`room:${id}`);
+      if (roomSocketSet) {
+        for (const socketId of Array.from(roomSocketSet)) {
+          const s = io.sockets.sockets.get(socketId);
+          if (s && s.data?.user?.id?.toString() === targetUserId.toString()) {
+            s.emit('room:kicked', { roomId: id });
+            removeSocketAwareness(io, s, id);
+            s.leave(`room:${id}`);
+            s.data?.rooms?.delete(id);
+            yjsManager.releaseDoc(id);
+          }
+        }
+      }
+
+      const targetUser = await User.findById(targetUserId);
+      const targetName = targetUser?.name || 'A member';
+      const msg = isSelf
+        ? `${targetName} left the room`
+        : `${targetName} was removed from the room`;
+      await broadcastSystemMessage(io, id, msg);
+
+      const onlineMembers = await getRoomOnlineMembers(io, id);
+      io.to(`room:${id}`).emit('room:members', onlineMembers);
+    }
 
     return res.status(200).json({
       message: isSelf ? 'Left room successfully' : 'Member removed successfully',

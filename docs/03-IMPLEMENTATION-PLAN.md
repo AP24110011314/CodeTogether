@@ -77,10 +77,10 @@ Follow doc 07 exactly.
 - **Accept:** infinite loop → "Time limit exceeded"; memory bomb killed; 10 MB print truncated; output visible to all room members.
 
 ## Phase 9 — Room Management and Sharing (1.5 days)
-- [ ] `MembersModal`: change role (owner), kick (owner), list online status
-- [ ] `ShareModal`: invite link copy, read-only share link (viewer-role token), regenerate invalidates old
-- [ ] Owner can delete room (cascade Document, Messages, Runs)
-- [ ] Kicked user's socket disconnected from the room immediately
+- [x] `MembersModal`: change role (owner), kick (owner), list online status
+- [x] `ShareModal`: invite link copy, read-only share link (viewer-role token), regenerate invalidates old
+- [x] Owner can delete room (cascade Document, Messages, Runs)
+- [x] Kicked user's socket disconnected from the room immediately
 - **Accept:** role change takes effect live (viewer's editor becomes read-only with no refresh).
 
 ## Phase 10 — Polish and Hardening (3 days)

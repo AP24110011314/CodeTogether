@@ -228,6 +228,11 @@ export default function Room() {
       navigate('/');
     });
 
+    socket.on('room:deleted', () => {
+      alert('This room has been deleted by the owner');
+      navigate('/');
+    });
+
     socket.on('room:error', (err) => {
       console.warn('Room socket error:', err);
     });
