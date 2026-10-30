@@ -92,8 +92,8 @@ Follow doc 07 exactly.
 - **Accept:** demo script in PRD §7 passes end to end.
 
 ## Phase 11 — Deployment (1 day)
-- [ ] Follow doc 10: MongoDB Atlas, backend on Render/Railway (WebSocket-capable), frontend on Vercel
-- [ ] Note: hosted Linux gets stronger isolation options (see doc 07 §6)
+- [x] Follow doc 10: MongoDB Atlas, backend on Render/Railway (WebSocket-capable), frontend on Vercel
+- [x] Note: hosted Linux gets stronger isolation options (see doc 07 §6)
 - **Accept:** live URL works with two real devices.
 
 ## Feature Coverage Matrix

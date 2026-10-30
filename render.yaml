@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: codetogether-api
+    runtime: node
+    plan: starter
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 4000
+      - key: CLIENT_URL
+        sync: false
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: EXECUTOR
+        value: local
+      - key: RUN_TIMEOUT_MS
+        value: 5000
+      - key: RUN_MEMORY_MB
+        value: 256
+      - key: RUN_OUTPUT_LIMIT_KB
+        value: 64
+      - key: RUN_CONCURRENCY
+        value: 2
