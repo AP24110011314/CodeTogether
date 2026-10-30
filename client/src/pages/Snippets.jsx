@@ -180,7 +180,7 @@ export default function Snippets() {
   return (
     <div style={styles.container}>
       {/* Translucent Top Header */}
-      <header className="glass" style={styles.navBar}>
+      <header className="glass dashboard-nav" style={styles.navBar}>
         <div style={styles.navLeft}>
           <Link to="/" style={styles.backLink} title="Back to Workspaces">
             <ArrowLeft size={18} />
@@ -195,16 +195,16 @@ export default function Snippets() {
         </div>
 
         <div style={styles.navRight}>
-          <button onClick={openCreateModal} className="btn btn-primary" style={{ padding: '8px 16px' }}>
+          <button onClick={openCreateModal} className="btn btn-primary" style={{ padding: '8px 14px' }}>
             <Plus size={16} />
-            <span>New Snippet</span>
+            <span className="desktop-only">New Snippet</span>
           </button>
           <ThemeToggle />
         </div>
       </header>
 
       {/* Main Content */}
-      <main style={styles.main}>
+      <main className="dashboard-main" style={styles.main}>
         {/* Search & Filter Toolbar */}
         <div style={styles.toolbar}>
           <form onSubmit={handleSearchSubmit} style={styles.searchForm}>

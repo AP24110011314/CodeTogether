@@ -4,18 +4,34 @@ import { useRoomStore } from '../store/roomStore.js';
 import { useAuthStore } from '../store/authStore.js';
 import { Toolbar } from '../components/editor/Toolbar.jsx';
 import { CodeEditor } from '../components/editor/CodeEditor.jsx';
+import { StatusBar } from '../components/editor/StatusBar.jsx';
 import { UserList } from '../components/presence/UserList.jsx';
 import { ChatPanel } from '../components/chat/ChatPanel.jsx';
+import { AiMentorPanel } from '../components/room/AiMentorPanel.jsx';
+import { VoiceLoungeBar } from '../components/room/VoiceLoungeBar.jsx';
+import { ChallengesModal } from '../components/room/ChallengesModal.jsx';
 import { ShareModal } from '../components/room/ShareModal.jsx';
 import { MembersModal } from '../components/room/MembersModal.jsx';
 import { SaveSnippetModal } from '../components/snippet/SaveSnippetModal.jsx';
 import { InsertSnippetModal } from '../components/snippet/InsertSnippetModal.jsx';
 import { OutputPanel } from '../components/editor/OutputPanel.jsx';
 import { ShortcutsModal } from '../components/common/ShortcutsModal.jsx';
+import { MobileBottomNav } from '../components/room/MobileBottomNav.jsx';
 import { toast } from '../store/toastStore.js';
 import { getLanguagesApi, getRoomRunsApi } from '../api/runs.js';
 import { initSocket, disconnectSocket, getSocket } from '../lib/socket.js';
-import { MessageSquare, Users, X, RefreshCw, Lock, ArrowLeft, Loader2 } from 'lucide-react';
+import {
+  MessageSquare,
+  Users,
+  Brain,
+  X,
+  RefreshCw,
+  Lock,
+  ArrowLeft,
+  Loader2,
+  Target,
+  Sparkles,
+} from 'lucide-react';
 
 export default function Room() {
   const { slug } = useParams();
@@ -58,9 +74,20 @@ export default function Room() {
   const [isSaveSnippetOpen, setIsSaveSnippetOpen] = useState(false);
   const [isInsertSnippetOpen, setIsInsertSnippetOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
+  const [isChallengesOpen, setIsChallengesOpen] = useState(false);
+  const [isVoiceActive, setIsVoiceActive] = useState(false);
   const [isSideOpen, setIsSideOpen] = useState(window.innerWidth >= 900);
   const [snippetSourceCode, setSnippetSourceCode] = useState('');
+  const [sideTab, setSideTab] = useState('chat'); // 'chat' | 'users' | 'ai'
+  const [bottomTab, setBottomTab] = useState('output'); // 'output' | 'stdin' | 'history'
+  const [isBottomOpen, setIsBottomOpen] = useState(false);
+  const [mobileView, setMobileView] = useState('code'); // 'code' | 'console' | 'chat' | 'ai' | 'users'
+
   const editorRef = useRef(null);
+  const sideTabRef = useRef(sideTab);
+  useEffect(() => {
+    sideTabRef.current = sideTab;
+  }, [sideTab]);
 
   const handleOpenSaveSnippet = () => {
     let codeToSave = '';
@@ -91,6 +118,29 @@ export default function Room() {
     }
   };
 
+  const handleLoadChallenge = (challenge) => {
+    if (!editorRef.current) return;
+    const model = editorRef.current.getModel();
+    if (model) {
+      const fullRange = model.getFullModelRange();
+      editorRef.current.executeEdits('challenge-load', [
+        {
+          range: fullRange,
+          text: challenge.starterCode,
+          forceMoveMarkers: true,
+        },
+      ]);
+      if (challenge.language && challenge.language !== language) {
+        setLanguage(challenge.language);
+        const socket = getSocket();
+        if (socket && socket.connected && room?.id) {
+          socket.emit('room:language', { roomId: room.id, language: challenge.language });
+        }
+      }
+      toast.success(`Loaded challenge: ${challenge.title}`);
+    }
+  };
+
   const handleRunCode = () => {
     if (role === 'viewer') return;
     const socket = getSocket();
@@ -103,6 +153,10 @@ export default function Room() {
     });
     setBottomTab('output');
     setIsBottomOpen(true);
+
+    if (window.innerWidth < 768) {
+      setMobileView('console');
+    }
 
     socket.emit(
       'run:start',
@@ -160,6 +214,7 @@ export default function Room() {
         setIsSaveSnippetOpen(false);
         setIsInsertSnippetOpen(false);
         setIsShortcutsOpen(false);
+        setIsChallengesOpen(false);
       }
     };
 
@@ -180,15 +235,6 @@ export default function Room() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-
-  const [sideTab, setSideTab] = useState('chat'); // 'chat' | 'users'
-  const sideTabRef = useRef(sideTab);
-  useEffect(() => {
-    sideTabRef.current = sideTab;
-  }, [sideTab]);
-
-  const [bottomTab, setBottomTab] = useState('output'); // 'output' | 'stdin' | 'history'
-  const [isBottomOpen, setIsBottomOpen] = useState(false);
 
   // Load language runtimes at mount
   useEffect(() => {
@@ -396,9 +442,10 @@ export default function Room() {
   if (!room) return null;
 
   const onlineCount = members.filter((m) => m.online).length;
+  const isRunning = Boolean(activeRun && (activeRun.status === 'running' || activeRun.status === 'queued'));
 
   return (
-    <div style={styles.container}>
+    <div style={styles.container} className="room-workspace-wrapper">
       {/* Reconnect Banner */}
       {connectionStatus !== 'connected' && (
         <div style={styles.reconnectBanner}>
@@ -424,6 +471,15 @@ export default function Room() {
         </div>
       )}
 
+      {/* Classroom Voice Lounge Bar */}
+      {isVoiceActive && (
+        <VoiceLoungeBar
+          members={members}
+          currentUser={user}
+          onClose={() => setIsVoiceActive(false)}
+        />
+      )}
+
       {/* Translucent Toolbar */}
       <Toolbar
         onShareClick={() => setIsShareOpen(true)}
@@ -432,27 +488,60 @@ export default function Room() {
         onInsertSnippetClick={() => setIsInsertSnippetOpen(true)}
         onRunClick={handleRunCode}
         onShortcutsClick={() => setIsShortcutsOpen(true)}
+        onChallengesClick={() => setIsChallengesOpen(true)}
+        onToggleAi={() => {
+          setSideTab('ai');
+          setIsSideOpen(true);
+        }}
+        onToggleVoice={() => setIsVoiceActive(!isVoiceActive)}
+        isVoiceActive={isVoiceActive}
       />
 
       {/* Main Workspace Frame */}
       <div style={styles.workspace}>
         {/* Main Editor & Output Panel Area */}
-        <div style={styles.editorArea}>
+        <div
+          style={{
+            ...styles.editorArea,
+            display:
+              window.innerWidth < 768 && mobileView !== 'code' && mobileView !== 'console'
+                ? 'none'
+                : 'flex',
+          }}
+        >
           <div style={styles.editorContainer}>
             <CodeEditor onEditorMount={(ed) => { editorRef.current = ed; }} />
           </div>
 
+          {/* Status Bar */}
+          <StatusBar
+            language={language}
+            getEditorInstance={() => editorRef.current}
+          />
+
+          {/* Bottom Execution Console */}
           <OutputPanel
-            isBottomOpen={isBottomOpen}
-            setIsBottomOpen={setIsBottomOpen}
+            isBottomOpen={isBottomOpen || (window.innerWidth < 768 && mobileView === 'console')}
+            setIsBottomOpen={(open) => {
+              setIsBottomOpen(open);
+              if (!open && mobileView === 'console') {
+                setMobileView('code');
+              }
+            }}
             bottomTab={bottomTab}
             setBottomTab={setBottomTab}
           />
         </div>
 
-        {/* Right Side Panel: Chat & Presence */}
-        {isSideOpen && (
-          <aside className="glass" style={styles.sidePanel}>
+        {/* Right Side Panel: Chat / Participants / AI Mentor */}
+        {(isSideOpen || (window.innerWidth < 768 && (mobileView === 'chat' || mobileView === 'ai' || mobileView === 'users'))) && (
+          <aside
+            className="glass"
+            style={{
+              ...styles.sidePanel,
+              ...(window.innerWidth < 768 ? styles.mobileSidePanel : {}),
+            }}
+          >
             <div style={styles.sideHeader}>
               <div style={styles.sideHeaderTabs}>
                 <button
@@ -465,7 +554,7 @@ export default function Room() {
                     ...(sideTab === 'chat' ? styles.activeSideTab : {}),
                   }}
                 >
-                  <MessageSquare size={14} />
+                  <MessageSquare size={13} />
                   <span>Chat</span>
                   {unreadMessagesCount > 0 && sideTab !== 'chat' && (
                     <span className="badge-glass badge-primary" style={{ fontSize: '0.625rem', padding: '1px 5px' }}>
@@ -473,6 +562,18 @@ export default function Room() {
                     </span>
                   )}
                 </button>
+
+                <button
+                  onClick={() => setSideTab('ai')}
+                  style={{
+                    ...styles.sideTab,
+                    ...(sideTab === 'ai' ? styles.activeSideTab : {}),
+                  }}
+                >
+                  <Brain size={13} style={{ color: 'var(--secondary)' }} />
+                  <span>AI Tutor</span>
+                </button>
+
                 <button
                   onClick={() => setSideTab('users')}
                   style={{
@@ -480,30 +581,41 @@ export default function Room() {
                     ...(sideTab === 'users' ? styles.activeSideTab : {}),
                   }}
                 >
-                  <Users size={14} />
-                  <span>Participants ({onlineCount})</span>
+                  <Users size={13} />
+                  <span>Peers ({onlineCount})</span>
                 </button>
               </div>
 
               <button
-                onClick={() => setIsSideOpen(false)}
+                onClick={() => {
+                  setIsSideOpen(false);
+                  if (window.innerWidth < 768) {
+                    setMobileView('code');
+                  }
+                }}
                 className="btn-ghost"
                 style={styles.sideCollapseBtn}
-                title="Collapse side panel (Cmd/Ctrl+B)"
-                aria-label="Collapse panel"
+                title="Close side panel"
+                aria-label="Close side panel"
               >
                 <X size={15} />
               </button>
             </div>
 
             <div style={styles.sideContent}>
-              {sideTab === 'chat' ? <ChatPanel /> : <UserList />}
+              {sideTab === 'chat' ? (
+                <ChatPanel />
+              ) : sideTab === 'ai' ? (
+                <AiMentorPanel getEditorCode={() => editorRef.current?.getValue() || ''} />
+              ) : (
+                <UserList />
+              )}
             </div>
           </aside>
         )}
 
-        {/* Floating Toggle Button when side panel is collapsed */}
-        {!isSideOpen && (
+        {/* Floating Toggle Button when side panel is collapsed on desktop */}
+        {!isSideOpen && window.innerWidth >= 768 && (
           <button
             onClick={() => setIsSideOpen(true)}
             className="btn btn-primary"
@@ -522,7 +634,38 @@ export default function Room() {
         )}
       </div>
 
+      {/* Mobile Bottom Navigation Bar (< 768px) */}
+      <MobileBottomNav
+        activeView={mobileView}
+        setActiveView={(view) => {
+          setMobileView(view);
+          if (view === 'console') {
+            setIsBottomOpen(true);
+            setIsSideOpen(false);
+          } else if (view === 'chat') {
+            setSideTab('chat');
+            setIsSideOpen(true);
+            clearUnread();
+          } else if (view === 'ai') {
+            setSideTab('ai');
+            setIsSideOpen(true);
+          } else if (view === 'code') {
+            setIsSideOpen(false);
+            setIsBottomOpen(false);
+          }
+        }}
+        unreadCount={unreadMessagesCount}
+        onlineCount={onlineCount}
+        onRunClick={handleRunCode}
+        isRunning={isRunning}
+      />
+
       {/* Modals */}
+      <ChallengesModal
+        isOpen={isChallengesOpen}
+        onClose={() => setIsChallengesOpen(false)}
+        onLoadChallenge={handleLoadChallenge}
+      />
       <ShareModal isOpen={isShareOpen} onClose={() => setIsShareOpen(false)} />
       <MembersModal isOpen={isMembersOpen} onClose={() => setIsMembersOpen(false)} />
       <SaveSnippetModal
@@ -550,6 +693,7 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     overflow: 'hidden',
+    position: 'relative',
   },
   centerContainer: {
     minHeight: '100vh',
@@ -643,7 +787,7 @@ const styles = {
     backgroundColor: 'var(--editor-bg)',
   },
   sidePanel: {
-    width: '320px',
+    width: '330px',
     display: 'flex',
     flexDirection: 'column',
     borderRadius: 0,
@@ -655,8 +799,16 @@ const styles = {
     flexShrink: 0,
     zIndex: 10,
   },
+  mobileSidePanel: {
+    position: 'absolute',
+    inset: 0,
+    width: '100%',
+    zIndex: 900,
+    borderLeft: 'none',
+    backgroundColor: 'var(--bg-base)',
+  },
   sideHeader: {
-    height: '40px',
+    height: '42px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -673,7 +825,7 @@ const styles = {
   sideTab: {
     display: 'inline-flex',
     alignItems: 'center',
-    gap: '6px',
+    gap: '5px',
     padding: '5px 8px',
     background: 'transparent',
     border: 'none',

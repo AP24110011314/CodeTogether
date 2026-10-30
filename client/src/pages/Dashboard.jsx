@@ -80,19 +80,19 @@ export default function Dashboard() {
   return (
     <div style={styles.container}>
       {/* macOS Translucent Top Navigation Bar */}
-      <header className="glass" style={styles.navBar}>
+      <header className="glass dashboard-nav" style={styles.navBar}>
         <div style={styles.navLeft}>
           <div style={styles.logoBadge}>
             <Code2 size={20} style={{ color: '#FFFFFF' }} />
           </div>
           <div>
             <span style={styles.brandTitle}>CodeTogether</span>
-            <span className="badge-glass badge-primary" style={{ marginLeft: '8px', fontSize: '0.6875rem' }}>
+            <span className="badge-glass badge-primary desktop-only" style={{ marginLeft: '8px', fontSize: '0.6875rem' }}>
               Labs
             </span>
           </div>
 
-          <nav style={styles.navLinks}>
+          <nav className="desktop-only" style={styles.navLinks}>
             <span style={{ ...styles.navLink, color: 'var(--primary)', fontWeight: '600' }}>
               Workspaces
             </span>
@@ -115,7 +115,7 @@ export default function Dashboard() {
             >
               {user?.name ? user.name[0].toUpperCase() : 'U'}
             </div>
-            <div style={styles.userMeta}>
+            <div className="desktop-only" style={styles.userMeta}>
               <span style={styles.userName}>{user?.name}</span>
               <span style={styles.userEmail}>{user?.email}</span>
             </div>
@@ -127,9 +127,9 @@ export default function Dashboard() {
       </header>
 
       {/* Main Content Area */}
-      <main style={styles.main}>
+      <main className="dashboard-main" style={styles.main}>
         {/* Welcome Greeting Banner */}
-        <section className="glass-strong" style={styles.greetingCard}>
+        <section className="glass-strong dashboard-greeting" style={styles.greetingCard}>
           <div style={styles.greetingContent}>
             <div style={styles.greetingPill}>
               <Sparkles size={14} style={{ color: 'var(--accent)' }} />
@@ -154,9 +154,9 @@ export default function Dashboard() {
         </section>
 
         {/* Action & Filter Toolbar */}
-        <div style={styles.toolbar}>
+        <div className="dashboard-toolbar" style={styles.toolbar}>
           {/* Tabs */}
-          <div className="glass-subtle" style={styles.tabsWrapper}>
+          <div className="glass-subtle dashboard-tabs" style={styles.tabsWrapper}>
             <button
               onClick={() => setActiveTab('mine')}
               style={{
@@ -178,11 +178,11 @@ export default function Dashboard() {
           </div>
 
           {/* Search Bar */}
-          <div style={styles.searchWrapper}>
+          <div className="dashboard-search" style={styles.searchWrapper}>
             <Search size={16} style={styles.searchIcon} />
             <input
               type="text"
-              className="input-glass"
+              className="input-glass dashboard-search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search workspaces by title or language..."

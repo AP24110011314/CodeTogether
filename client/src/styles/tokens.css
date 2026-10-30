@@ -543,3 +543,73 @@ select:-webkit-autofill {
   overflow-y: auto;
 }
 
+/* ==========================================================================
+   Mobile Responsive Utilities (< 768px)
+   ========================================================================== */
+.mobile-bottom-bar {
+  display: none !important;
+}
+
+@media (max-width: 768px) {
+  .mobile-bottom-bar {
+    display: flex !important;
+  }
+
+  .desktop-only {
+    display: none !important;
+  }
+
+  .mobile-hide {
+    display: none !important;
+  }
+
+  .room-workspace-wrapper {
+    padding-bottom: 56px !important;
+  }
+
+  .modal-content {
+    max-width: 96vw !important;
+    padding: 16px !important;
+    border-radius: var(--radius-lg) !important;
+  }
+
+  .modal-backdrop {
+    padding: 8px !important;
+  }
+
+  .dashboard-nav {
+    margin: 8px 12px !important;
+    padding: 10px 14px !important;
+  }
+
+  .dashboard-main {
+    padding: 8px 12px 64px !important;
+  }
+
+  .dashboard-greeting {
+    padding: 20px 16px !important;
+    margin-bottom: 20px !important;
+  }
+
+  .dashboard-toolbar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .dashboard-tabs {
+    width: 100% !important;
+    display: flex !important;
+  }
+
+  .dashboard-tabs button {
+    flex: 1 !important;
+    text-align: center !important;
+  }
+
+  .dashboard-search {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+}
+
+

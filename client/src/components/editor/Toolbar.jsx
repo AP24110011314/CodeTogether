@@ -13,7 +13,9 @@ import {
   FileInput,
   Keyboard,
   Loader2,
-  Sliders,
+  Target,
+  Brain,
+  Volume2,
 } from 'lucide-react';
 
 export function Toolbar({
@@ -23,6 +25,10 @@ export function Toolbar({
   onInsertSnippetClick,
   onRunClick,
   onShortcutsClick,
+  onChallengesClick,
+  onToggleAi,
+  onToggleVoice,
+  isVoiceActive,
 }) {
   const navigate = useNavigate();
   const {
@@ -52,7 +58,7 @@ export function Toolbar({
     <header className="glass" style={styles.container}>
       {/* Left Group: Traffic Lights & Room Meta */}
       <div style={styles.leftGroup}>
-        <div className="mac-traffic-lights" style={{ marginRight: '6px' }}>
+        <div className="mac-traffic-lights desktop-only" style={{ marginRight: '6px' }}>
           <span
             className="mac-dot mac-dot-close"
             onClick={() => navigate('/')}
@@ -126,7 +132,7 @@ export function Toolbar({
           />
         </div>
 
-        <div style={styles.controlItem}>
+        <div style={styles.controlItem} className="desktop-only">
           <select
             value={preferences.fontSize}
             onChange={(e) => setFontSize(Number(e.target.value))}
@@ -142,36 +148,57 @@ export function Toolbar({
         </div>
 
         <button
-          onClick={() => setMinimap(!preferences.minimap)}
-          className={preferences.minimap ? 'btn btn-primary' : 'btn btn-secondary'}
-          style={{ padding: '5px 9px', fontSize: '0.75rem', height: '32px' }}
-          title="Toggle Editor Minimap"
+          onClick={onChallengesClick}
+          className="btn btn-secondary desktop-only"
+          style={{ padding: '5px 9px', fontSize: '0.75rem', height: '32px', gap: '5px' }}
+          title="Pick an educational challenge or template"
         >
-          Map {preferences.minimap ? 'ON' : 'OFF'}
+          <Target size={13} style={{ color: 'var(--primary)' }} />
+          <span>Labs</span>
+        </button>
+
+        <button
+          onClick={onToggleAi}
+          className="btn btn-secondary desktop-only"
+          style={{ padding: '5px 9px', fontSize: '0.75rem', height: '32px', gap: '5px' }}
+          title="Open AI Code Mentor"
+        >
+          <Brain size={13} style={{ color: 'var(--secondary)' }} />
+          <span>AI Tutor</span>
         </button>
       </div>
 
       {/* Right Group: Snippets, Run, Share, Members, Theme */}
       <div style={styles.rightGroup}>
         <button
+          onClick={onToggleVoice}
+          className={isVoiceActive ? 'btn btn-primary desktop-only' : 'btn btn-secondary desktop-only'}
+          style={{ padding: '5px 8px', fontSize: '0.75rem', height: '32px', gap: '4px' }}
+          title="Toggle Classroom Audio Lounge"
+        >
+          <Volume2 size={13} />
+          <span>Lounge</span>
+        </button>
+
+        <button
           onClick={onInsertSnippetClick}
           disabled={isViewer}
-          className="btn btn-secondary"
+          className="btn btn-secondary desktop-only"
           style={styles.actionBtn}
           title="Insert saved snippet at cursor"
         >
           <FileInput size={14} />
-          <span className="desktop-text">Insert</span>
+          <span>Insert</span>
         </button>
 
         <button
           onClick={onSaveSnippetClick}
-          className="btn btn-secondary"
+          className="btn btn-secondary desktop-only"
           style={styles.actionBtn}
           title="Save code as snippet (Cmd/Ctrl+S)"
         >
           <BookmarkPlus size={14} />
-          <span className="desktop-text">Save</span>
+          <span>Save</span>
         </button>
 
         <button
@@ -194,12 +221,12 @@ export function Toolbar({
         >
           {isRunning ? (
             <>
-              <Loader2 size={15} className="spinner" style={{ animation: 'spin 1s linear infinite' }} />
-              <span>{activeRun.status === 'queued' ? 'Queued' : 'Running'}</span>
+              <Loader2 size={14} className="spinner" style={{ animation: 'spin 1s linear infinite' }} />
+              <span className="desktop-only">{activeRun.status === 'queued' ? 'Queued' : 'Running'}</span>
             </>
           ) : (
             <>
-              <Play size={14} fill="currentColor" />
+              <Play size={13} fill="currentColor" />
               <span>Run</span>
             </>
           )}
@@ -212,12 +239,12 @@ export function Toolbar({
           title="Share room link"
         >
           <Share2 size={14} />
-          <span className="desktop-text">Share</span>
+          <span className="desktop-only">Share</span>
         </button>
 
         <button
           onClick={onMembersClick}
-          className="btn btn-secondary"
+          className="btn btn-secondary desktop-only"
           style={styles.actionBtn}
           title="Manage room participants"
         >
@@ -227,7 +254,7 @@ export function Toolbar({
 
         <button
           onClick={onShortcutsClick}
-          className="btn btn-ghost"
+          className="btn btn-ghost desktop-only"
           style={{ padding: '6px', color: 'var(--text-muted)' }}
           title="Keyboard shortcuts (?)"
           aria-label="Keyboard shortcuts"
@@ -247,20 +274,20 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: '0 16px',
+    padding: '0 12px',
     borderRadius: '0',
     borderTop: 'none',
     borderLeft: 'none',
     borderRight: 'none',
     borderBottom: '1px solid var(--glass-border)',
-    gap: '12px',
+    gap: '8px',
     flexShrink: 0,
     zIndex: 20,
   },
   leftGroup: {
     display: 'flex',
     alignItems: 'center',
-    gap: '10px',
+    gap: '8px',
     minWidth: 0,
   },
   backBtn: {
@@ -271,47 +298,47 @@ const styles = {
     alignItems: 'center',
   },
   roomName: {
-    fontSize: '0.9375rem',
+    fontSize: '0.875rem',
     fontWeight: '700',
     color: 'var(--text-primary)',
     whiteSpace: 'nowrap',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
-    maxWidth: '220px',
+    maxWidth: '160px',
   },
   centerGroup: {
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
+    gap: '6px',
   },
   controlItem: {
     display: 'flex',
     alignItems: 'center',
   },
   compactSelect: {
-    padding: '4px 8px',
+    padding: '4px 6px',
     height: '32px',
-    fontSize: '0.8125rem',
+    fontSize: '0.75rem',
     width: 'auto',
     cursor: 'pointer',
   },
   rightGroup: {
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
+    gap: '6px',
     flexShrink: 0,
   },
   actionBtn: {
-    padding: '6px 10px',
-    fontSize: '0.8125rem',
+    padding: '5px 8px',
+    fontSize: '0.75rem',
     height: '32px',
-    gap: '6px',
+    gap: '5px',
   },
   runBtn: {
-    padding: '6px 14px',
+    padding: '6px 12px',
     fontSize: '0.8125rem',
     height: '32px',
-    gap: '6px',
+    gap: '5px',
     color: '#FFFFFF',
     fontWeight: '600',
   },
