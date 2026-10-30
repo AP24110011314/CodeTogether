@@ -54,3 +54,4 @@ router.patch('/:id/members/:userId', validate(updateRoleSchema), updateMemberRol
 router.delete('/:id/members/:userId', removeMember);
 
 export default router;
+

@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LanguageSelect } from './LanguageSelect.jsx';
 import { useRoomStore } from '../../store/roomStore.js';
+import { getSocket } from '../../lib/socket.js';
 
 export function Toolbar({ onShareClick, onMembersClick }) {
   const navigate = useNavigate();
@@ -9,14 +10,23 @@ export function Toolbar({ onShareClick, onMembersClick }) {
     room,
     role,
     language,
+    members,
     preferences,
     setTheme,
     setFontSize,
     setMinimap,
-    updateRoomLanguage,
+    setLanguage,
   } = useRoomStore();
 
   const isViewer = role === 'viewer';
+
+  const handleLanguageChange = (newLang) => {
+    setLanguage(newLang);
+    const socket = getSocket();
+    if (socket && socket.connected && room?.id) {
+      socket.emit('room:language', { roomId: room.id, language: newLang });
+    }
+  };
 
   return (
     <div style={styles.container}>
@@ -49,7 +59,7 @@ export function Toolbar({ onShareClick, onMembersClick }) {
           <label style={styles.controlLabel}>Lang:</label>
           <LanguageSelect
             value={language}
-            onChange={(newLang) => updateRoomLanguage(newLang)}
+            onChange={handleLanguageChange}
             disabled={isViewer}
           />
         </div>
@@ -118,7 +128,7 @@ export function Toolbar({ onShareClick, onMembersClick }) {
           style={styles.actionButton}
           title="View room members"
         >
-          Members ({room?.members?.length || 1})
+          Members ({members?.length || room?.members?.length || 1})
         </button>
       </div>
     </div>
@@ -231,3 +241,4 @@ const styles = {
     cursor: 'pointer',
   },
 };
+

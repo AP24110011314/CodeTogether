@@ -43,3 +43,4 @@ export function getUserRoleInRoom(room, userId) {
 
   return member ? member.role : null;
 }
+

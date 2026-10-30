@@ -30,6 +30,8 @@ export const useRoomStore = create((set, get) => ({
   editorCode: '// Welcome to CodeTogether!\n// Start coding collaboratively here.\n\nfunction hello() {\n  console.log("Hello, world!");\n}\n\nhello();\n',
   isLoading: false,
   error: null,
+  members: [],
+  connectionStatus: 'disconnected', // 'disconnected' | 'connecting' | 'connected'
 
   preferences: {
     theme: getInitialPreference('theme', 'vs-dark'),
@@ -58,11 +60,27 @@ export const useRoomStore = create((set, get) => ({
     }));
   },
 
-  setLanguage: (language) => set({ language }),
+  setLanguage: (language) => {
+    const { room } = get();
+    set({
+      language,
+      room: room ? { ...room, language } : null,
+    });
+  },
 
   setEditorCode: (editorCode) => set({ editorCode }),
 
-  setRoom: (room, role) => set({ room, role, language: room?.language || 'javascript' }),
+  setMembers: (members) => set({ members }),
+
+  setConnectionStatus: (connectionStatus) => set({ connectionStatus }),
+
+  setRoom: (room, role) =>
+    set({
+      room,
+      role,
+      language: room?.language || 'javascript',
+      members: room?.members || get().members,
+    }),
 
   loadRoom: async (slug, query = {}) => {
     set({ isLoading: true, error: null });
@@ -91,7 +109,10 @@ export const useRoomStore = create((set, get) => ({
       set({ isLoading: false });
       return data;
     } catch (err) {
-      set({ isLoading: false, error: err.response?.data?.error?.message || 'Failed to create room' });
+      set({
+        isLoading: false,
+        error: err.response?.data?.error?.message || 'Failed to create room',
+      });
       throw err;
     }
   },
@@ -110,7 +131,7 @@ export const useRoomStore = create((set, get) => ({
   deleteRoom: async (id) => {
     await deleteRoomApi(id);
     if (get().room?.id === id) {
-      set({ room: null, role: null });
+      set({ room: null, role: null, members: [] });
     }
   },
 }));

@@ -267,3 +267,4 @@ describe('Rooms API', () => {
     });
   });
 });
+

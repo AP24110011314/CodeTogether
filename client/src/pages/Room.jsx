@@ -1,17 +1,34 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useRoomStore } from '../store/roomStore.js';
+import { useAuthStore } from '../store/authStore.js';
 import { Toolbar } from '../components/editor/Toolbar.jsx';
 import { CodeEditor } from '../components/editor/CodeEditor.jsx';
 import { ShareModal } from '../components/room/ShareModal.jsx';
 import { MembersModal } from '../components/room/MembersModal.jsx';
+import { initSocket, disconnectSocket, getSocket } from '../lib/socket.js';
 
 export default function Room() {
   const { slug } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  const { room, role, isLoading, error, loadRoom } = useRoomStore();
+  const user = useAuthStore((state) => state.user);
+  const accessToken = useAuthStore((state) => state.accessToken);
+
+  const {
+    room,
+    role,
+    members,
+    isLoading,
+    error,
+    loadRoom,
+    setRoom,
+    setMembers,
+    setLanguage,
+    setConnectionStatus,
+  } = useRoomStore();
+
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isMembersOpen, setIsMembersOpen] = useState(false);
 
@@ -20,6 +37,7 @@ export default function Room() {
   const [bottomTab, setBottomTab] = useState('output'); // 'output' | 'stdin' | 'history'
   const [isBottomOpen, setIsBottomOpen] = useState(true);
 
+  // Initial room REST fetch
   useEffect(() => {
     const invite = searchParams.get('invite');
     const view = searchParams.get('view');
@@ -29,6 +47,70 @@ export default function Room() {
 
     loadRoom(slug, query).catch(() => {});
   }, [slug, searchParams, loadRoom]);
+
+  // Socket.IO Room Session Connection
+  useEffect(() => {
+    if (!accessToken || !room?.id) return;
+
+    setConnectionStatus('connecting');
+    const socket = initSocket(accessToken);
+
+    socket.on('connect', () => {
+      setConnectionStatus('connected');
+      const invite = searchParams.get('invite');
+      const view = searchParams.get('view');
+
+      socket.emit(
+        'room:join',
+        {
+          slug,
+          inviteToken: invite,
+          viewToken: view,
+        },
+        (ack) => {
+          if (ack?.ok) {
+            setRoom(ack.room, ack.role);
+            if (ack.members) setMembers(ack.members);
+          }
+        }
+      );
+    });
+
+    socket.on('disconnect', () => {
+      setConnectionStatus('disconnected');
+    });
+
+    socket.on('room:members', (updatedMembers) => {
+      setMembers(updatedMembers);
+    });
+
+    socket.on('room:language', ({ language }) => {
+      setLanguage(language);
+    });
+
+    socket.on('room:role-changed', ({ userId, role: newRole }) => {
+      if (userId === user?.id) {
+        setRoom({ ...room }, newRole);
+      }
+    });
+
+    socket.on('room:kicked', () => {
+      alert('You have been removed from this room');
+      navigate('/');
+    });
+
+    socket.on('room:error', (err) => {
+      console.warn('Room socket error:', err);
+    });
+
+    return () => {
+      if (socket.connected) {
+        socket.emit('room:leave', { roomId: room.id });
+      }
+      disconnectSocket();
+      setConnectionStatus('disconnected');
+    };
+  }, [accessToken, room?.id, slug, searchParams, setRoom, setMembers, setLanguage, setConnectionStatus, user?.id, navigate]);
 
   if (isLoading) {
     return (
@@ -62,6 +144,8 @@ export default function Room() {
   }
 
   if (!room) return null;
+
+  const onlineCount = members.filter((m) => m.online).length;
 
   return (
     <div style={styles.container}>
@@ -172,7 +256,7 @@ export default function Room() {
                 ...(sideTab === 'users' ? styles.activeSideTab : {}),
               }}
             >
-              👥 Online ({room.members?.length || 1})
+              👥 Online ({onlineCount}/{members.length || 1})
             </button>
           </div>
 
@@ -180,7 +264,7 @@ export default function Room() {
             {sideTab === 'chat' ? (
               <div style={styles.chatPlaceholder}>
                 <div style={styles.emptyNotice}>
-                  <span>Room created. Live collaborative chat is active.</span>
+                  <span>Room session active. Real-time chat will be connected in Phase 6.</span>
                 </div>
                 <div style={styles.chatInputRow}>
                   <input
@@ -196,20 +280,29 @@ export default function Room() {
               </div>
             ) : (
               <div style={styles.usersList}>
-                {room.members?.map((m, idx) => {
-                  const userObj = m.userId && typeof m.userId === 'object' ? m.userId : null;
-                  const name = userObj?.name || 'Member';
-                  const color = userObj?.avatarColor || '#38bdf8';
-                  return (
-                    <div key={idx} style={styles.userRow}>
-                      <div style={{ ...styles.userAvatar, backgroundColor: color }}>
-                        {name[0].toUpperCase()}
-                      </div>
-                      <div style={styles.userName}>{name}</div>
-                      <div style={styles.userRoleTag}>{m.role}</div>
+                {members.map((m, idx) => (
+                  <div key={m.userId || idx} style={styles.userRow}>
+                    <div style={{ ...styles.userAvatar, backgroundColor: m.color || '#38bdf8' }}>
+                      {m.name ? m.name[0].toUpperCase() : 'U'}
                     </div>
-                  );
-                })}
+                    <div style={styles.userDetails}>
+                      <div style={styles.userNameRow}>
+                        <span style={styles.userName}>{m.name}</span>
+                        {m.userId === user?.id && <span style={styles.youBadge}>(You)</span>}
+                      </div>
+                      <div style={styles.statusRow}>
+                        <span
+                          style={{
+                            ...styles.statusDot,
+                            backgroundColor: m.online ? '#10b981' : '#64748b',
+                          }}
+                        />
+                        <span style={styles.statusText}>{m.online ? 'Online' : 'Offline'}</span>
+                      </div>
+                    </div>
+                    <div style={styles.userRoleTag}>{m.role}</div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
@@ -397,33 +490,66 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     gap: '10px',
-    padding: '6px 8px',
+    padding: '8px 10px',
     backgroundColor: '#0f172a',
-    borderRadius: '6px',
+    borderRadius: '8px',
+    border: '1px solid #334155',
   },
   userAvatar: {
-    width: '28px',
-    height: '28px',
+    width: '32px',
+    height: '32px',
     borderRadius: '50%',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     fontWeight: '700',
-    fontSize: '12px',
+    fontSize: '13px',
     color: '#ffffff',
+    flexShrink: 0,
+  },
+  userDetails: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '2px',
+  },
+  userNameRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
   },
   userName: {
-    flex: 1,
     fontSize: '13px',
-    fontWeight: '500',
+    fontWeight: '600',
+    color: '#f8fafc',
+  },
+  youBadge: {
+    fontSize: '10px',
+    color: '#38bdf8',
+    fontWeight: '600',
+  },
+  statusRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '5px',
+  },
+  statusDot: {
+    width: '7px',
+    height: '7px',
+    borderRadius: '50%',
+  },
+  statusText: {
+    fontSize: '11px',
+    color: '#94a3b8',
   },
   userRoleTag: {
-    fontSize: '10px',
+    fontSize: '11px',
     color: '#94a3b8',
     backgroundColor: '#1e293b',
-    padding: '2px 6px',
+    padding: '2px 8px',
     borderRadius: '4px',
     textTransform: 'capitalize',
+    fontWeight: '500',
   },
   centerContainer: {
     minHeight: '100vh',

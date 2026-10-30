@@ -409,3 +409,4 @@ export async function removeMember(req, res, next) {
     next(error);
   }
 }
+

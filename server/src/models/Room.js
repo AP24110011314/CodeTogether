@@ -88,3 +88,4 @@ const roomSchema = new mongoose.Schema(
 roomSchema.index({ 'members.userId': 1 });
 
 export const Room = mongoose.model('Room', roomSchema);
+

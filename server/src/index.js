@@ -3,6 +3,7 @@ import { Server } from 'socket.io';
 import app from './app.js';
 import { env } from './config/env.js';
 import { connectDB } from './config/db.js';
+import { setupSockets } from './sockets/index.js';
 import logger from './utils/logger.js';
 
 const server = http.createServer(app);
@@ -13,6 +14,8 @@ const io = new Server(server, {
     credentials: true,
   },
 });
+
+setupSockets(io);
 
 export { io, server };
 

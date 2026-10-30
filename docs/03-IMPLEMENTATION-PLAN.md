@@ -28,11 +28,11 @@ Work through phases in order. Tick every box and pass the acceptance test before
 - **Accept:** create room, open via link, edit locally, switch language/theme; private room blocks outsiders.
 
 ## Phase 3 — Socket Server and Room Sessions (2 days)
-- [ ] Socket.IO server with JWT handshake auth (`auth: { token }`)
-- [ ] `room:join` / `room:leave`, membership + visibility check, auto-add member as editor for public rooms (viewer if owner set default viewer)
-- [ ] `permissions.js` helper: `can(role, action)` used by every handler
-- [ ] Emit `room:members` and system join/leave events
-- [ ] `room:language` change broadcast (editor+)
+- [x] Socket.IO server with JWT handshake auth (`auth: { token }`)
+- [x] `room:join` / `room:leave`, membership + visibility check, auto-add member as editor for public rooms (viewer if owner set default viewer)
+- [x] `permissions.js` helper: `can(role, action)` used by every handler
+- [x] Emit `room:members` and system join/leave events
+- [x] `room:language` change broadcast (editor+)
 - **Accept:** two browsers join the same room and see each other in the member list; unauthorized join gets `room:error`.
 
 ## Phase 4 — Yjs Real-Time Sync (4 days) ★ core

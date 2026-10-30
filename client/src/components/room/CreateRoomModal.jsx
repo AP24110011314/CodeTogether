@@ -277,3 +277,4 @@ const styles = {
     cursor: 'pointer',
   },
 };
+

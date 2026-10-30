@@ -48,3 +48,4 @@ export async function removeMemberApi(id, userId) {
   const response = await http.delete(`/rooms/${id}/members/${userId}`);
   return response.data;
 }
+
