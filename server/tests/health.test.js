@@ -22,3 +22,4 @@ describe('Health Check API', () => {
     expect(res.body.error.code).toBe('NOT_FOUND');
   });
 });
+

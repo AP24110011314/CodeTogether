@@ -13,10 +13,10 @@ Work through phases in order. Tick every box and pass the acceptance test before
 - **Accept:** both apps start; no reference to port 5000 anywhere (`grep -rn "5000" .` is empty).
 
 ## Phase 1 — Auth (2 days)
-- [ ] `User` model, register/login/refresh/logout/me endpoints (doc 05)
-- [ ] bcrypt hashing, JWT access token, refresh token in httpOnly cookie, auth middleware
-- [ ] Client: Login/Register pages, `authStore`, axios interceptor with silent refresh, `ProtectedRoute`
-- [ ] Assign random `avatarColor` at registration
+- [x] `User` model, register/login/refresh/logout/me endpoints (doc 05)
+- [x] bcrypt hashing, JWT access token, refresh token in httpOnly cookie, auth middleware
+- [x] Client: Login/Register pages, `authStore`, axios interceptor with silent refresh, `ProtectedRoute`
+- [x] Assign random `avatarColor` at registration
 - **Accept:** register → login → refresh page stays logged in → logout clears session; bad password rejected.
 
 ## Phase 2 — Rooms and Editor Shell (3 days)

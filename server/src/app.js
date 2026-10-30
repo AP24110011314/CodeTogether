@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import { env } from './config/env.js';
 import { errorHandler } from './middleware/error.js';
+import authRouter from './routes/auth.js';
 
 const app = express();
 
@@ -26,6 +27,9 @@ const healthCheck = (req, res) => {
 app.get('/health', healthCheck);
 app.get('/api/health', healthCheck);
 
+// API routes
+app.use('/api/auth', authRouter);
+
 // 404 handler for undefined routes
 app.use((req, res) => {
   res.status(404).json({
@@ -39,3 +43,4 @@ app.use((req, res) => {
 app.use(errorHandler);
 
 export default app;
+

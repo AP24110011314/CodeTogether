@@ -16,3 +16,4 @@ export async function connectDB() {
 export async function disconnectDB() {
   await mongoose.disconnect();
 }
+
