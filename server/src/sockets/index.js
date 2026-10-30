@@ -3,6 +3,7 @@ import { env } from '../config/env.js';
 import { User } from '../models/User.js';
 import { registerRoomHandlers, getRoomOnlineMembers } from './roomHandlers.js';
 import { registerYjsHandlers } from './yjsHandlers.js';
+import { registerAwarenessHandlers, removeSocketAwareness } from './awarenessHandlers.js';
 import { yjsManager } from '../services/yjsManager.js';
 import logger from '../utils/logger.js';
 
@@ -54,6 +55,7 @@ export function setupSockets(io) {
     // Register handlers
     registerRoomHandlers(io, socket);
     registerYjsHandlers(io, socket);
+    registerAwarenessHandlers(io, socket);
 
     socket.on('disconnect', async (reason) => {
       logger.info({ userId: user.id, socketId: socket.id, reason }, 'User disconnected from socket');
@@ -62,6 +64,9 @@ export function setupSockets(io) {
       const joinedRooms = Array.from(socket.data.rooms || []);
       for (const roomId of joinedRooms) {
         try {
+          // Remove awareness states and notify room
+          removeSocketAwareness(io, socket, roomId);
+
           yjsManager.releaseDoc(roomId);
           const members = await getRoomOnlineMembers(io, roomId);
           io.to(`room:${roomId}`).emit('room:members', members);

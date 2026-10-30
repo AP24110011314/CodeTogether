@@ -2,6 +2,7 @@ import * as Y from 'yjs';
 import { yjsManager } from '../services/yjsManager.js';
 import { Room } from '../models/Room.js';
 import { can, getUserRoleInRoom } from '../services/permissions.js';
+import { sendInitialAwareness } from './awarenessHandlers.js';
 import logger from '../utils/logger.js';
 
 const MAX_UPDATE_BYTES = 1024 * 1024; // 1 MB limit from doc 09
@@ -43,6 +44,9 @@ export function registerYjsHandlers(io, socket) {
         roomId,
         stateVector: serverVector,
       });
+
+      // Send current awareness states
+      sendInitialAwareness(socket, roomId);
     } catch (err) {
       logger.error({ err }, 'Error in yjs:sync-step1');
     }
@@ -138,3 +142,4 @@ export function registerYjsHandlers(io, socket) {
     }
   });
 }
+

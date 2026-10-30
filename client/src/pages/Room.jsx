@@ -4,6 +4,7 @@ import { useRoomStore } from '../store/roomStore.js';
 import { useAuthStore } from '../store/authStore.js';
 import { Toolbar } from '../components/editor/Toolbar.jsx';
 import { CodeEditor } from '../components/editor/CodeEditor.jsx';
+import { UserList } from '../components/presence/UserList.jsx';
 import { ShareModal } from '../components/room/ShareModal.jsx';
 import { MembersModal } from '../components/room/MembersModal.jsx';
 import { initSocket, disconnectSocket, getSocket } from '../lib/socket.js';
@@ -279,31 +280,7 @@ export default function Room() {
                 </div>
               </div>
             ) : (
-              <div style={styles.usersList}>
-                {members.map((m, idx) => (
-                  <div key={m.userId || idx} style={styles.userRow}>
-                    <div style={{ ...styles.userAvatar, backgroundColor: m.color || '#38bdf8' }}>
-                      {m.name ? m.name[0].toUpperCase() : 'U'}
-                    </div>
-                    <div style={styles.userDetails}>
-                      <div style={styles.userNameRow}>
-                        <span style={styles.userName}>{m.name}</span>
-                        {m.userId === user?.id && <span style={styles.youBadge}>(You)</span>}
-                      </div>
-                      <div style={styles.statusRow}>
-                        <span
-                          style={{
-                            ...styles.statusDot,
-                            backgroundColor: m.online ? '#10b981' : '#64748b',
-                          }}
-                        />
-                        <span style={styles.statusText}>{m.online ? 'Online' : 'Offline'}</span>
-                      </div>
-                    </div>
-                    <div style={styles.userRoleTag}>{m.role}</div>
-                  </div>
-                ))}
-              </div>
+              <UserList />
             )}
           </div>
         </div>

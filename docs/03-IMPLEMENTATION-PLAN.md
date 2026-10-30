@@ -45,10 +45,10 @@ Work through phases in order. Tick every box and pass the acceptance test before
 - **Accept:** (a) two clients type simultaneously → identical text; (b) kill the network on one client, type, reconnect → merged; (c) restart server → text restored from Mongo.
 
 ## Phase 5 — Presence and Cursors (2 days)
-- [ ] Awareness set on client: `{ user: {id, name, color}, cursor/selection (by y-monaco), typing }`
-- [ ] Relay `awareness:update` through server; remove states on disconnect
-- [ ] CSS for remote cursor and selection using user color; name label above cursor
-- [ ] `UserList` with colored avatars, role badge, typing indicator
+- [x] Awareness set on client: `{ user: {id, name, color}, cursor/selection (by y-monaco), typing }`
+- [x] Relay `awareness:update` through server; remove states on disconnect
+- [x] CSS for remote cursor and selection using user color; name label above cursor
+- [x] `UserList` with colored avatars, role badge, typing indicator
 - **Accept:** colored cursor and label follow the other user; disappears ≤5 s after tab close.
 
 ## Phase 6 — Chat (1.5 days)

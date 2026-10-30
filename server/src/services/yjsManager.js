@@ -1,4 +1,5 @@
 import * as Y from 'yjs';
+import * as awarenessProtocol from 'y-protocols/awareness';
 import { Document } from '../models/Document.js';
 import logger from '../utils/logger.js';
 
@@ -29,6 +30,7 @@ class YjsManager {
     const doc = new Y.Doc();
     const entry = {
       doc,
+      awareness: new awarenessProtocol.Awareness(doc),
       refCount: 1,
       saveTimeout: null,
       destroyTimeout: null,
@@ -70,9 +72,10 @@ class YjsManager {
       // Schedule cleanup after idle timeout
       entry.destroyTimeout = setTimeout(() => {
         if (entry.refCount === 0) {
+          entry.awareness.destroy();
           entry.doc.destroy();
           this.docs.delete(id);
-          logger.info({ roomId: id }, 'Destroyed idle in-memory Y.Doc');
+          logger.info({ roomId: id }, 'Destroyed idle in-memory Y.Doc and Awareness');
         }
       }, this.idleDestroyMs);
     }
@@ -126,6 +129,12 @@ class YjsManager {
     const entry = this.docs.get(id);
     if (!entry) return '';
     return entry.doc.getText('monaco').toString();
+  }
+
+  getAwareness(roomId) {
+    const id = roomId.toString();
+    const entry = this.docs.get(id);
+    return entry ? entry.awareness : null;
   }
 }
 

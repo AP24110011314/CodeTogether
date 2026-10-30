@@ -3,11 +3,14 @@ import Editor from '@monaco-editor/react';
 import * as Y from 'yjs';
 import { MonacoBinding } from 'y-monaco';
 import { useRoomStore } from '../../store/roomStore.js';
+import { useAuthStore } from '../../store/authStore.js';
 import { getSocket } from '../../lib/socket.js';
 import { SocketIOProvider } from '../../lib/SocketIOProvider.js';
+import { updateCursorStyles, cleanupCursorStyles } from '../../lib/cursorStyles.js';
 
 export function CodeEditor() {
   const { room, language, preferences, role } = useRoomStore();
+  const user = useAuthStore((state) => state.user);
   const [isSynced, setIsSynced] = useState(false);
   const [providerStatus, setProviderStatus] = useState('connecting');
 
@@ -15,31 +18,112 @@ export function CodeEditor() {
   const ydocRef = useRef(null);
   const providerRef = useRef(null);
   const bindingRef = useRef(null);
+  const typingTimerRef = useRef(null);
+  const typingListenerRef = useRef(null);
+  const awarenessListenerRef = useRef(null);
 
   const isReadOnly = role === 'viewer';
+
+  const cleanupSession = () => {
+    if (typingListenerRef.current) {
+      typingListenerRef.current.dispose();
+      typingListenerRef.current = null;
+    }
+    if (typingTimerRef.current) {
+      clearTimeout(typingTimerRef.current);
+      typingTimerRef.current = null;
+    }
+    if (awarenessListenerRef.current && providerRef.current?.awareness) {
+      providerRef.current.awareness.off('change', awarenessListenerRef.current);
+      awarenessListenerRef.current = null;
+    }
+    cleanupCursorStyles();
+    useRoomStore.getState().setAwarenessUsers([]);
+
+    if (bindingRef.current) {
+      bindingRef.current.destroy();
+      bindingRef.current = null;
+    }
+    if (providerRef.current) {
+      providerRef.current.destroy();
+      providerRef.current = null;
+    }
+    if (ydocRef.current) {
+      ydocRef.current.destroy();
+      ydocRef.current = null;
+    }
+  };
 
   const setupBinding = (editor) => {
     const socket = getSocket();
     if (!socket || !room?.id) return;
 
-    // Clean up previous binding if any
-    if (bindingRef.current) bindingRef.current.destroy();
-    if (providerRef.current) providerRef.current.destroy();
-    if (ydocRef.current) ydocRef.current.destroy();
+    cleanupSession();
 
     const doc = new Y.Doc();
     const provider = new SocketIOProvider(socket, room.id, doc);
     const yText = doc.getText('monaco');
     const model = editor.getModel();
 
+    // Set awareness local state: user info and initial typing false
+    if (user) {
+      provider.awareness.setLocalState({
+        user: {
+          id: user.id,
+          name: user.name,
+          color: user.avatarColor || '#38bdf8',
+        },
+        typing: false,
+      });
+    }
+
+    // MonacoBinding with awareness for remote cursors and selections
     const binding = new MonacoBinding(
       yText,
       model,
-      new Set([editor])
+      new Set([editor]),
+      provider.awareness
     );
 
     provider.on('synced', (synced) => setIsSynced(synced));
     provider.on('status', ({ status }) => setProviderStatus(status));
+
+    // Handle awareness change: dynamic cursor styles and roomStore awarenessUsers
+    const handleAwarenessChange = () => {
+      updateCursorStyles(provider.awareness);
+
+      const awarenessList = [];
+      provider.awareness.getStates().forEach((state, clientID) => {
+        if (state?.user) {
+          awarenessList.push({
+            clientId: clientID,
+            user: state.user,
+            typing: Boolean(state.typing),
+            isLocal: clientID === provider.awareness.clientID,
+          });
+        }
+      });
+      useRoomStore.getState().setAwarenessUsers(awarenessList);
+    };
+
+    provider.awareness.on('change', handleAwarenessChange);
+    awarenessListenerRef.current = handleAwarenessChange;
+    handleAwarenessChange();
+
+    // Typing activity indicator in Monaco editor
+    const typingListener = editor.onDidChangeModelContent(() => {
+      if (isReadOnly) return;
+      if (!provider.awareness.getLocalState()?.typing) {
+        provider.awareness.setLocalStateField('typing', true);
+      }
+      if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+      typingTimerRef.current = setTimeout(() => {
+        if (provider.awareness) {
+          provider.awareness.setLocalStateField('typing', false);
+        }
+      }, 1500);
+    });
+    typingListenerRef.current = typingListener;
 
     ydocRef.current = doc;
     providerRef.current = provider;
@@ -58,18 +142,7 @@ export function CodeEditor() {
     }
 
     return () => {
-      if (bindingRef.current) {
-        bindingRef.current.destroy();
-        bindingRef.current = null;
-      }
-      if (providerRef.current) {
-        providerRef.current.destroy();
-        providerRef.current = null;
-      }
-      if (ydocRef.current) {
-        ydocRef.current.destroy();
-        ydocRef.current = null;
-      }
+      cleanupSession();
     };
   }, [room?.id]);
 

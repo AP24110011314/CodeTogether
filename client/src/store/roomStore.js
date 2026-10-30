@@ -31,6 +31,7 @@ export const useRoomStore = create((set, get) => ({
   isLoading: false,
   error: null,
   members: [],
+  awarenessUsers: [],
   connectionStatus: 'disconnected', // 'disconnected' | 'connecting' | 'connected'
 
   preferences: {
@@ -71,6 +72,8 @@ export const useRoomStore = create((set, get) => ({
   setEditorCode: (editorCode) => set({ editorCode }),
 
   setMembers: (members) => set({ members }),
+
+  setAwarenessUsers: (awarenessUsers) => set({ awarenessUsers }),
 
   setConnectionStatus: (connectionStatus) => set({ connectionStatus }),
 

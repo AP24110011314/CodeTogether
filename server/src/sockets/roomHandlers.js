@@ -1,6 +1,7 @@
 import { Room } from '../models/Room.js';
 import { can, getUserRoleInRoom } from '../services/permissions.js';
 import { yjsManager } from '../services/yjsManager.js';
+import { sendInitialAwareness, removeSocketAwareness } from './awarenessHandlers.js';
 import logger from '../utils/logger.js';
 
 export async function getRoomOnlineMembers(io, roomId) {
@@ -99,6 +100,9 @@ export function registerRoomHandlers(io, socket) {
       // Broadcast updated member list to room
       io.to(`room:${roomId}`).emit('room:members', members);
 
+      // Send existing awareness states to joining socket
+      sendInitialAwareness(socket, roomId);
+
       if (typeof callback === 'function') {
         callback({
           ok: true,
@@ -130,6 +134,7 @@ export function registerRoomHandlers(io, socket) {
       const { roomId } = payload || {};
       if (!roomId) return;
 
+      removeSocketAwareness(io, socket, roomId);
       socket.leave(`room:${roomId}`);
       socket.data.rooms.delete(roomId);
       yjsManager.releaseDoc(roomId);
