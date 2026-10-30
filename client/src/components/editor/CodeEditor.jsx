@@ -4,17 +4,21 @@ import * as Y from 'yjs';
 import { MonacoBinding } from 'y-monaco';
 import { useRoomStore } from '../../store/roomStore.js';
 import { useAuthStore } from '../../store/authStore.js';
+import { useThemeStore } from '../../store/themeStore.js';
 import { getSocket } from '../../lib/socket.js';
 import { SocketIOProvider } from '../../lib/SocketIOProvider.js';
 import { updateCursorStyles, cleanupCursorStyles } from '../../lib/cursorStyles.js';
+import { Loader2, Eye, RefreshCw } from 'lucide-react';
 
 export function CodeEditor({ onEditorMount }) {
   const { room, language, preferences, role } = useRoomStore();
   const user = useAuthStore((state) => state.user);
+  const appTheme = useThemeStore((state) => state.theme);
   const [isSynced, setIsSynced] = useState(false);
   const [providerStatus, setProviderStatus] = useState('connecting');
 
   const editorRef = useRef(null);
+  const monacoRef = useRef(null);
   const ydocRef = useRef(null);
   const providerRef = useRef(null);
   const bindingRef = useRef(null);
@@ -23,6 +27,58 @@ export function CodeEditor({ onEditorMount }) {
   const awarenessListenerRef = useRef(null);
 
   const isReadOnly = role === 'viewer';
+
+  const registerCustomThemes = (monaco) => {
+    monaco.editor.defineTheme('codetogether-dark', {
+      base: 'vs-dark',
+      inherit: true,
+      rules: [
+        { token: 'comment', foreground: '627199', fontStyle: 'italic' },
+        { token: 'keyword', foreground: 'F472B6', fontStyle: 'bold' },
+        { token: 'string', foreground: '6EE7B7' },
+        { token: 'number', foreground: 'FBBF24' },
+        { token: 'type', foreground: '38BDF8' },
+        { token: 'function', foreground: '7C93FF' },
+      ],
+      colors: {
+        'editor.background': '#0B1020',
+        'editor.foreground': '#E8ECF8',
+        'editorCursor.foreground': '#7C93FF',
+        'editor.lineHighlightBackground': '#11193677',
+        'editorLineNumber.foreground': '#475569',
+        'editorLineNumber.activeForeground': '#7C93FF',
+        'editor.selectionBackground': '#4F6BF640',
+        'editor.inactiveSelectionBackground': '#4F6BF620',
+        'editorIndentGuide.background': '#1E293B',
+        'editorIndentGuide.activeBackground': '#4F6BF6',
+      },
+    });
+
+    monaco.editor.defineTheme('codetogether-light', {
+      base: 'vs',
+      inherit: true,
+      rules: [
+        { token: 'comment', foreground: '64748B', fontStyle: 'italic' },
+        { token: 'keyword', foreground: 'D946EF', fontStyle: 'bold' },
+        { token: 'string', foreground: '0D9488' },
+        { token: 'number', foreground: 'D97706' },
+        { token: 'type', foreground: '0284C7' },
+        { token: 'function', foreground: '4F6BF6' },
+      ],
+      colors: {
+        'editor.background': '#FFFFFF',
+        'editor.foreground': '#0F172A',
+        'editorCursor.foreground': '#4F6BF6',
+        'editor.lineHighlightBackground': '#EEF2FF99',
+        'editorLineNumber.foreground': '#94A3B8',
+        'editorLineNumber.activeForeground': '#4F6BF6',
+        'editor.selectionBackground': '#4F6BF626',
+        'editor.inactiveSelectionBackground': '#4F6BF614',
+        'editorIndentGuide.background': '#E2E8F0',
+        'editorIndentGuide.activeBackground': '#4F6BF6',
+      },
+    });
+  };
 
   const cleanupSession = () => {
     if (typingListenerRef.current) {
@@ -65,7 +121,6 @@ export function CodeEditor({ onEditorMount }) {
     const yText = doc.getText('monaco');
     const model = editor.getModel();
 
-    // Set awareness local state: user info and initial typing false
     if (user) {
       provider.awareness.setLocalState({
         user: {
@@ -77,7 +132,6 @@ export function CodeEditor({ onEditorMount }) {
       });
     }
 
-    // MonacoBinding with awareness for remote cursors and selections
     const binding = new MonacoBinding(
       yText,
       model,
@@ -88,7 +142,6 @@ export function CodeEditor({ onEditorMount }) {
     provider.on('synced', (synced) => setIsSynced(synced));
     provider.on('status', ({ status }) => setProviderStatus(status));
 
-    // Handle awareness change: dynamic cursor styles and roomStore awarenessUsers
     const handleAwarenessChange = () => {
       updateCursorStyles(provider.awareness);
 
@@ -99,7 +152,7 @@ export function CodeEditor({ onEditorMount }) {
             clientId: clientID,
             user: state.user,
             typing: Boolean(state.typing),
-            isLocal: clientID === provider.awareness.clientID,
+            cursor: state.cursor,
           });
         }
       });
@@ -108,12 +161,9 @@ export function CodeEditor({ onEditorMount }) {
 
     provider.awareness.on('change', handleAwarenessChange);
     awarenessListenerRef.current = handleAwarenessChange;
-    handleAwarenessChange();
 
-    // Typing activity indicator in Monaco editor
     const typingListener = editor.onDidChangeModelContent(() => {
-      if (isReadOnly) return;
-      if (!provider.awareness.getLocalState()?.typing) {
+      if (provider.awareness) {
         provider.awareness.setLocalStateField('typing', true);
       }
       if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
@@ -130,8 +180,11 @@ export function CodeEditor({ onEditorMount }) {
     bindingRef.current = binding;
   };
 
-  const handleEditorDidMount = (editor) => {
+  const handleEditorDidMount = (editor, monaco) => {
     editorRef.current = editor;
+    monacoRef.current = monaco;
+    registerCustomThemes(monaco);
+
     if (typeof onEditorMount === 'function') {
       onEditorMount(editor);
     }
@@ -143,7 +196,6 @@ export function CodeEditor({ onEditorMount }) {
     if (editorRef.current && room?.id) {
       setupBinding(editorRef.current);
     }
-
     return () => {
       cleanupSession();
     };
@@ -156,15 +208,31 @@ export function CodeEditor({ onEditorMount }) {
     }
   }, [isReadOnly]);
 
+  // Resolve active Monaco theme
+  const activeMonacoTheme =
+    preferences.theme === 'vs' || preferences.theme === 'light'
+      ? 'codetogether-light'
+      : preferences.theme === 'hc-black'
+      ? 'hc-black'
+      : preferences.theme === 'vs-dark'
+      ? 'codetogether-dark'
+      : appTheme === 'dark'
+      ? 'codetogether-dark'
+      : 'codetogether-light';
+
   return (
     <div style={styles.editorContainer}>
       {isReadOnly && (
         <div style={styles.readOnlyBanner}>
-          You are viewing this room with read-only permissions. Code editing is disabled.
+          <Eye size={15} style={{ flexShrink: 0 }} />
+          <span>You are viewing this workspace with read-only permissions. Code editing is disabled.</span>
         </div>
       )}
       {!isSynced && providerStatus === 'connected' && (
-        <div style={styles.syncingBanner}>Synchronizing document state...</div>
+        <div style={styles.syncingBanner}>
+          <RefreshCw size={14} className="spinner" style={{ animation: 'spin 1s linear infinite' }} />
+          <span>Synchronizing document state...</span>
+        </div>
       )}
       {providerStatus === 'disconnected' && (
         <div style={styles.disconnectedBanner}>
@@ -175,7 +243,7 @@ export function CodeEditor({ onEditorMount }) {
         <Editor
           height="100%"
           language={language}
-          theme={preferences.theme === 'light' ? 'vs' : (preferences.theme || 'vs-dark')}
+          theme={activeMonacoTheme}
           onMount={handleEditorDidMount}
           options={{
             readOnly: isReadOnly,
@@ -186,11 +254,16 @@ export function CodeEditor({ onEditorMount }) {
             tabSize: 2,
             wordWrap: 'on',
             lineNumbers: 'on',
-            padding: { top: 12, bottom: 12 },
+            padding: { top: 14, bottom: 14 },
+            fontFamily: 'var(--font-mono)',
+            smoothScrolling: true,
+            cursorBlinking: 'smooth',
+            cursorSmoothCaretAnimation: 'on',
           }}
           loading={
             <div style={styles.loadingContainer}>
-              <span>Loading Monaco Editor...</span>
+              <Loader2 size={24} className="spinner" style={{ animation: 'spin 1s linear infinite', color: 'var(--primary)' }} />
+              <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Loading Monaco Canvas...</span>
             </div>
           }
         />
@@ -202,48 +275,56 @@ export function CodeEditor({ onEditorMount }) {
 const styles = {
   editorContainer: {
     height: '100%',
-    width: '100%',
     display: 'flex',
     flexDirection: 'column',
     position: 'relative',
-    backgroundColor: '#1e1e1e',
+    overflow: 'hidden',
+    backgroundColor: 'var(--editor-bg)',
   },
   readOnlyBanner: {
-    backgroundColor: '#854d0e',
-    color: '#fef08a',
-    fontSize: '12px',
-    padding: '6px 12px',
-    textAlign: 'center',
+    backgroundColor: 'rgba(245, 158, 11, 0.12)',
+    color: 'var(--accent)',
+    padding: '8px 16px',
+    fontSize: '0.8125rem',
     fontWeight: '500',
-    borderBottom: '1px solid #a16207',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    borderBottom: '1px solid rgba(245, 158, 11, 0.25)',
+    zIndex: 10,
   },
   syncingBanner: {
-    backgroundColor: '#1e3a8a',
-    color: '#93c5fd',
-    fontSize: '12px',
-    padding: '4px 12px',
-    textAlign: 'center',
-    fontWeight: '500',
+    backgroundColor: 'rgba(79, 107, 246, 0.1)',
+    color: 'var(--primary)',
+    padding: '6px 16px',
+    fontSize: '0.75rem',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    borderBottom: '1px solid rgba(79, 107, 246, 0.2)',
+    zIndex: 10,
   },
   disconnectedBanner: {
-    backgroundColor: '#991b1b',
-    color: '#fecaca',
-    fontSize: '12px',
-    padding: '4px 12px',
+    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+    color: 'var(--danger)',
+    padding: '8px 16px',
+    fontSize: '0.8125rem',
     textAlign: 'center',
-    fontWeight: '500',
+    borderBottom: '1px solid rgba(239, 68, 68, 0.3)',
+    zIndex: 10,
   },
   editorWrapper: {
     flex: 1,
     height: '100%',
-    width: '100%',
+    overflow: 'hidden',
   },
   loadingContainer: {
+    height: '100%',
     display: 'flex',
+    flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    height: '100%',
-    color: '#94a3b8',
-    fontSize: '14px',
+    gap: '12px',
+    backgroundColor: 'var(--editor-bg)',
   },
 };

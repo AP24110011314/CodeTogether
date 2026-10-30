@@ -2,7 +2,19 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LanguageSelect } from './LanguageSelect.jsx';
 import { useRoomStore } from '../../store/roomStore.js';
+import { ThemeToggle } from '../common/ThemeToggle.jsx';
 import { getSocket } from '../../lib/socket.js';
+import {
+  ArrowLeft,
+  Play,
+  Share2,
+  Users,
+  BookmarkPlus,
+  FileInput,
+  Keyboard,
+  Loader2,
+  Sliders,
+} from 'lucide-react';
 
 export function Toolbar({
   onShareClick,
@@ -20,7 +32,6 @@ export function Toolbar({
     members,
     activeRun,
     preferences,
-    setTheme,
     setFontSize,
     setMinimap,
     setLanguage,
@@ -38,34 +49,76 @@ export function Toolbar({
   };
 
   return (
-    <div style={styles.container}>
+    <header className="glass" style={styles.container}>
+      {/* Left Group: Traffic Lights & Room Meta */}
       <div style={styles.leftGroup}>
+        <div className="mac-traffic-lights" style={{ marginRight: '6px' }}>
+          <span
+            className="mac-dot mac-dot-close"
+            onClick={() => navigate('/')}
+            style={{ cursor: 'pointer' }}
+            title="Return to Dashboard"
+          />
+          <span
+            className="mac-dot mac-dot-min"
+            onClick={() => setMinimap(!preferences.minimap)}
+            style={{ cursor: 'pointer' }}
+            title="Toggle Minimap"
+          />
+          <span
+            className="mac-dot mac-dot-max"
+            onClick={!isViewer && !isRunning ? onRunClick : undefined}
+            style={{ cursor: !isViewer && !isRunning ? 'pointer' : 'default' }}
+            title="Run Code"
+          />
+        </div>
+
         <button
           onClick={() => navigate('/')}
+          className="btn-ghost"
+          style={styles.backBtn}
           title="Back to Dashboard"
-          style={styles.backButton}
         >
-          &larr;
+          <ArrowLeft size={16} />
         </button>
-        <span style={styles.roomName}>{room?.name || 'Workspace'}</span>
+
+        <span style={styles.roomName} title={room?.name}>
+          {room?.name || 'Workspace'}
+        </span>
+
         <span
+          className="badge-glass"
           style={{
-            ...styles.roleBadge,
             backgroundColor:
               role === 'owner'
-                ? '#8b5cf6'
+                ? 'rgba(124, 147, 255, 0.15)'
                 : role === 'editor'
-                ? '#10b981'
-                : '#64748b',
+                ? 'rgba(45, 212, 191, 0.15)'
+                : 'rgba(100, 116, 139, 0.15)',
+            color:
+              role === 'owner'
+                ? 'var(--primary)'
+                : role === 'editor'
+                ? 'var(--secondary)'
+                : 'var(--text-muted)',
+            borderColor:
+              role === 'owner'
+                ? 'rgba(124, 147, 255, 0.3)'
+                : role === 'editor'
+                ? 'rgba(45, 212, 191, 0.3)'
+                : 'rgba(100, 116, 139, 0.3)',
+            textTransform: 'uppercase',
+            fontSize: '0.6875rem',
+            fontWeight: '600',
           }}
         >
-          {role?.toUpperCase()}
+          {role || 'editor'}
         </span>
       </div>
 
+      {/* Center Controls: Language, Font, Minimap */}
       <div style={styles.centerGroup}>
         <div style={styles.controlItem}>
-          <label style={styles.controlLabel}>Lang:</label>
           <LanguageSelect
             value={language}
             onChange={handleLanguageChange}
@@ -74,227 +127,192 @@ export function Toolbar({
         </div>
 
         <div style={styles.controlItem}>
-          <label style={styles.controlLabel}>Theme:</label>
-          <select
-            value={preferences.theme}
-            onChange={(e) => setTheme(e.target.value)}
-            style={styles.select}
-          >
-            <option value="vs-dark">Dark</option>
-            <option value="light">Light</option>
-            <option value="hc-black">High Contrast</option>
-          </select>
-        </div>
-
-        <div style={styles.controlItem}>
-          <label style={styles.controlLabel}>Font:</label>
           <select
             value={preferences.fontSize}
             onChange={(e) => setFontSize(Number(e.target.value))}
-            style={styles.select}
+            className="input-glass"
+            style={styles.compactSelect}
+            title="Editor Font Size"
           >
-            <option value={12}>12px</option>
-            <option value={14}>14px</option>
-            <option value={16}>16px</option>
-            <option value={18}>18px</option>
-            <option value={20}>20px</option>
+            <option value={12} style={{ background: 'var(--bg-base)' }}>12px</option>
+            <option value={14} style={{ background: 'var(--bg-base)' }}>14px</option>
+            <option value={16} style={{ background: 'var(--bg-base)' }}>16px</option>
+            <option value={18} style={{ background: 'var(--bg-base)' }}>18px</option>
           </select>
         </div>
 
         <button
           onClick={() => setMinimap(!preferences.minimap)}
-          style={{
-            ...styles.toggleButton,
-            backgroundColor: preferences.minimap ? '#0284c7' : '#334155',
-          }}
-          title="Toggle Minimap"
+          className={preferences.minimap ? 'btn btn-primary' : 'btn btn-secondary'}
+          style={{ padding: '5px 9px', fontSize: '0.75rem', height: '32px' }}
+          title="Toggle Editor Minimap"
         >
           Map {preferences.minimap ? 'ON' : 'OFF'}
         </button>
       </div>
 
+      {/* Right Group: Snippets, Run, Share, Members, Theme */}
       <div style={styles.rightGroup}>
         <button
           onClick={onInsertSnippetClick}
           disabled={isViewer}
-          style={{
-            ...styles.actionButton,
-            opacity: isViewer ? 0.5 : 1,
-            cursor: isViewer ? 'not-allowed' : 'pointer',
-          }}
+          className="btn btn-secondary"
+          style={styles.actionBtn}
           title="Insert saved snippet at cursor"
         >
-          Insert Snippet
+          <FileInput size={14} />
+          <span className="desktop-text">Insert</span>
         </button>
+
         <button
           onClick={onSaveSnippetClick}
-          style={styles.actionButton}
+          className="btn btn-secondary"
+          style={styles.actionBtn}
           title="Save code as snippet (Cmd/Ctrl+S)"
         >
-          Save Snippet
+          <BookmarkPlus size={14} />
+          <span className="desktop-text">Save</span>
         </button>
+
         <button
           onClick={onRunClick}
           disabled={isViewer || isRunning}
+          className="btn btn-primary"
           style={{
-            ...styles.runButton,
-            opacity: isViewer || isRunning ? 0.6 : 1,
-            cursor: isViewer || isRunning ? 'not-allowed' : 'pointer',
-            backgroundColor: isRunning ? '#eab308' : '#22c55e',
+            ...styles.runBtn,
+            background: isRunning
+              ? 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)'
+              : 'linear-gradient(135deg, #22C55E 0%, #14B8A6 100%)',
           }}
           title={
             isViewer
-              ? 'Viewers cannot execute code'
+              ? 'Viewers have read-only permissions'
               : isRunning
               ? 'Execution in progress...'
-              : 'Execute code (Cmd/Ctrl+Enter)'
+              : 'Execute code (Cmd/Ctrl + Enter)'
           }
         >
           {isRunning ? (
-            <span>⏳ {activeRun.status === 'queued' ? 'Queued' : 'Running'}</span>
+            <>
+              <Loader2 size={15} className="spinner" style={{ animation: 'spin 1s linear infinite' }} />
+              <span>{activeRun.status === 'queued' ? 'Queued' : 'Running'}</span>
+            </>
           ) : (
-            '▶ Run'
+            <>
+              <Play size={14} fill="currentColor" />
+              <span>Run</span>
+            </>
           )}
         </button>
+
         <button
           onClick={onShareClick}
-          style={styles.actionButton}
+          className="btn btn-secondary"
+          style={styles.actionBtn}
           title="Share room link"
         >
-          Share
+          <Share2 size={14} />
+          <span className="desktop-text">Share</span>
         </button>
+
         <button
           onClick={onMembersClick}
-          style={styles.actionButton}
-          title="View room members"
+          className="btn btn-secondary"
+          style={styles.actionBtn}
+          title="Manage room participants"
         >
-          Members ({members?.length || room?.members?.length || 1})
+          <Users size={14} />
+          <span>{members?.length || room?.members?.length || 1}</span>
         </button>
+
         <button
           onClick={onShortcutsClick}
-          style={styles.shortcutsButton}
+          className="btn btn-ghost"
+          style={{ padding: '6px', color: 'var(--text-muted)' }}
           title="Keyboard shortcuts (?)"
+          aria-label="Keyboard shortcuts"
         >
-          ⌨️
+          <Keyboard size={16} />
         </button>
+
+        <ThemeToggle style={{ height: '32px' }} />
       </div>
-    </div>
+    </header>
   );
 }
 
 const styles = {
   container: {
-    height: '52px',
-    backgroundColor: '#1e293b',
-    borderBottom: '1px solid #334155',
+    height: '56px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: '0 16px',
-    color: '#f8fafc',
+    borderRadius: '0',
+    borderTop: 'none',
+    borderLeft: 'none',
+    borderRight: 'none',
+    borderBottom: '1px solid var(--glass-border)',
     gap: '12px',
     flexShrink: 0,
+    zIndex: 20,
   },
   leftGroup: {
     display: 'flex',
     alignItems: 'center',
-    gap: '12px',
-    minWidth: '200px',
+    gap: '10px',
+    minWidth: 0,
   },
-  backButton: {
-    background: 'none',
-    border: 'none',
-    color: '#94a3b8',
-    fontSize: '18px',
-    cursor: 'pointer',
-    padding: '4px 8px',
-    borderRadius: '4px',
-    transition: 'color 0.2s',
+  backBtn: {
+    padding: '6px',
+    borderRadius: 'var(--radius-sm)',
+    color: 'var(--text-secondary)',
+    display: 'flex',
+    alignItems: 'center',
   },
   roomName: {
+    fontSize: '0.9375rem',
     fontWeight: '700',
-    fontSize: '15px',
-    color: '#f8fafc',
+    color: 'var(--text-primary)',
     whiteSpace: 'nowrap',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
-    maxWidth: '180px',
-  },
-  roleBadge: {
-    fontSize: '10px',
-    fontWeight: '700',
-    padding: '2px 6px',
-    borderRadius: '4px',
-    letterSpacing: '0.5px',
+    maxWidth: '220px',
   },
   centerGroup: {
     display: 'flex',
     alignItems: 'center',
-    gap: '12px',
-    flexWrap: 'wrap',
+    gap: '8px',
   },
   controlItem: {
     display: 'flex',
     alignItems: 'center',
-    gap: '6px',
   },
-  controlLabel: {
-    fontSize: '12px',
-    color: '#94a3b8',
-    fontWeight: '500',
-  },
-  select: {
-    backgroundColor: '#0f172a',
-    color: '#f8fafc',
-    border: '1px solid #475569',
-    borderRadius: '6px',
-    padding: '5px 8px',
-    fontSize: '12px',
-    outline: 'none',
-    cursor: 'pointer',
-  },
-  toggleButton: {
-    border: 'none',
-    borderRadius: '6px',
-    padding: '5px 9px',
-    fontSize: '12px',
-    fontWeight: '600',
-    color: '#ffffff',
+  compactSelect: {
+    padding: '4px 8px',
+    height: '32px',
+    fontSize: '0.8125rem',
+    width: 'auto',
     cursor: 'pointer',
   },
   rightGroup: {
     display: 'flex',
     alignItems: 'center',
     gap: '8px',
+    flexShrink: 0,
   },
-  runButton: {
-    backgroundColor: '#16a34a',
-    color: '#ffffff',
-    border: 'none',
-    borderRadius: '6px',
-    padding: '6px 14px',
-    fontWeight: '700',
-    fontSize: '13px',
-    transition: 'background-color 0.2s',
-  },
-  actionButton: {
-    backgroundColor: '#334155',
-    color: '#f8fafc',
-    border: '1px solid #475569',
-    borderRadius: '6px',
-    padding: '6px 12px',
-    fontSize: '12px',
-    fontWeight: '500',
-    cursor: 'pointer',
-  },
-  shortcutsButton: {
-    backgroundColor: '#334155',
-    color: '#f8fafc',
-    border: '1px solid #475569',
-    borderRadius: '6px',
+  actionBtn: {
     padding: '6px 10px',
-    fontSize: '12px',
-    cursor: 'pointer',
+    fontSize: '0.8125rem',
+    height: '32px',
+    gap: '6px',
+  },
+  runBtn: {
+    padding: '6px 14px',
+    fontSize: '0.8125rem',
+    height: '32px',
+    gap: '6px',
+    color: '#FFFFFF',
+    fontWeight: '600',
   },
 };
-

@@ -1,6 +1,7 @@
 import React from 'react';
 import { useRoomStore } from '../../store/roomStore.js';
 import { useAuthStore } from '../../store/authStore.js';
+import { Users, Edit2, Circle } from 'lucide-react';
 
 export function UserList() {
   const { members, awarenessUsers } = useRoomStore();
@@ -20,12 +21,40 @@ export function UserList() {
     (a) => a.user?.id && !memberUserIds.has(a.user.id)
   );
 
+  const getRoleBadgeStyle = (role) => {
+    switch (role) {
+      case 'owner':
+        return {
+          backgroundColor: 'rgba(124, 147, 255, 0.15)',
+          color: 'var(--primary)',
+          borderColor: 'rgba(124, 147, 255, 0.3)',
+        };
+      case 'editor':
+        return {
+          backgroundColor: 'rgba(45, 212, 191, 0.15)',
+          color: 'var(--secondary)',
+          borderColor: 'rgba(45, 212, 191, 0.3)',
+        };
+      default:
+        return {
+          backgroundColor: 'rgba(100, 116, 139, 0.15)',
+          color: 'var(--text-muted)',
+          borderColor: 'rgba(100, 116, 139, 0.3)',
+        };
+    }
+  };
+
+  const onlineCount = members.filter((m) => m.online).length;
+
   return (
     <div style={styles.container}>
       <div style={styles.header}>
-        <span style={styles.title}>Room Participants</span>
-        <span style={styles.badge}>
-          {members.filter((m) => m.online).length} online
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Users size={16} style={{ color: 'var(--primary)' }} />
+          <span style={styles.title}>Participants</span>
+        </div>
+        <span className="badge-glass badge-secondary">
+          {onlineCount} active
         </span>
       </div>
 
@@ -36,12 +65,12 @@ export function UserList() {
           const hasCursor = activeAwarenessUserIds.has(m.userId);
 
           return (
-            <div key={m.userId} style={styles.userCard}>
+            <div key={m.userId} className="glass-subtle" style={styles.userCard}>
               <div style={styles.avatarContainer}>
                 <div
                   style={{
                     ...styles.avatar,
-                    backgroundColor: m.color || '#38bdf8',
+                    backgroundColor: m.color || 'var(--primary)',
                   }}
                 >
                   {m.name ? m.name[0].toUpperCase() : 'U'}
@@ -49,7 +78,7 @@ export function UserList() {
                 <div
                   style={{
                     ...styles.statusDot,
-                    backgroundColor: m.online ? '#10b981' : '#64748b',
+                    backgroundColor: m.online ? 'var(--success)' : 'var(--text-muted)',
                   }}
                   title={m.online ? 'Online' : 'Offline'}
                 />
@@ -60,11 +89,17 @@ export function UserList() {
                   <span style={styles.name} title={m.name}>
                     {m.name}
                   </span>
-                  {isCurrentUser && <span style={styles.youBadge}>You</span>}
+                  {isCurrentUser && (
+                    <span className="badge-glass badge-primary" style={{ fontSize: '0.625rem' }}>
+                      You
+                    </span>
+                  )}
                   <span
+                    className="badge-glass"
                     style={{
-                      ...styles.roleBadge,
                       ...getRoleBadgeStyle(m.role),
+                      fontSize: '0.625rem',
+                      textTransform: 'uppercase',
                     }}
                   >
                     {m.role || 'editor'}
@@ -74,13 +109,8 @@ export function UserList() {
                 <div style={styles.statusRow}>
                   {isTyping ? (
                     <div style={styles.typingContainer}>
-                      <span style={styles.typingPencil}>✍️</span>
-                      <span style={styles.typingText}>typing</span>
-                      <span style={styles.dots}>
-                        <span style={styles.dot1}>.</span>
-                        <span style={styles.dot2}>.</span>
-                        <span style={styles.dot3}>.</span>
-                      </span>
+                      <Edit2 size={11} style={{ color: 'var(--primary)' }} />
+                      <span style={styles.typingText}>typing...</span>
                     </div>
                   ) : hasCursor && m.online ? (
                     <span style={styles.cursorActiveText}>• active in editor</span>
@@ -95,52 +125,33 @@ export function UserList() {
           );
         })}
 
-        {/* Any temporary guest awareness users not yet registered in members list */}
+        {/* Guest awareness users */}
         {extraAwarenessUsers.map((a) => {
           const isCurrentUser = a.user.id === currentUser?.id;
           return (
-            <div key={`awareness-${a.clientId}`} style={styles.userCard}>
+            <div key={a.clientId} className="glass-subtle" style={styles.userCard}>
               <div style={styles.avatarContainer}>
                 <div
                   style={{
                     ...styles.avatar,
-                    backgroundColor: a.user.color || '#38bdf8',
+                    backgroundColor: a.user.color || 'var(--primary)',
                   }}
                 >
                   {a.user.name ? a.user.name[0].toUpperCase() : 'U'}
                 </div>
-                <div
-                  style={{
-                    ...styles.statusDot,
-                    backgroundColor: '#10b981',
-                  }}
-                  title="Online"
-                />
+                <div style={{ ...styles.statusDot, backgroundColor: 'var(--success)' }} />
               </div>
-
               <div style={styles.userInfo}>
                 <div style={styles.nameRow}>
                   <span style={styles.name}>{a.user.name}</span>
-                  {isCurrentUser && <span style={styles.youBadge}>You</span>}
-                  <span
-                    style={{
-                      ...styles.roleBadge,
-                      ...getRoleBadgeStyle('viewer'),
-                    }}
-                  >
-                    viewer
-                  </span>
-                </div>
-
-                <div style={styles.statusRow}>
-                  {a.typing ? (
-                    <div style={styles.typingContainer}>
-                      <span style={styles.typingPencil}>✍️</span>
-                      <span style={styles.typingText}>typing...</span>
-                    </div>
-                  ) : (
-                    <span style={styles.cursorActiveText}>• active in editor</span>
+                  {isCurrentUser && (
+                    <span className="badge-glass badge-primary" style={{ fontSize: '0.625rem' }}>
+                      You
+                    </span>
                   )}
+                </div>
+                <div style={styles.statusRow}>
+                  <span style={styles.cursorActiveText}>• connected</span>
                 </div>
               </div>
             </div>
@@ -151,101 +162,64 @@ export function UserList() {
   );
 }
 
-function getRoleBadgeStyle(role) {
-  switch (role) {
-    case 'owner':
-      return {
-        backgroundColor: '#78350f',
-        color: '#fef08a',
-        borderColor: '#b45309',
-      };
-    case 'viewer':
-      return {
-        backgroundColor: '#1e293b',
-        color: '#94a3b8',
-        borderColor: '#334155',
-      };
-    case 'editor':
-    default:
-      return {
-        backgroundColor: '#1e3a8a',
-        color: '#93c5fd',
-        borderColor: '#2563eb',
-      };
-  }
-}
-
 const styles = {
   container: {
+    height: '100%',
     display: 'flex',
     flexDirection: 'column',
-    height: '100%',
-    backgroundColor: '#0f172a',
+    backgroundColor: 'transparent',
+    overflow: 'hidden',
   },
   header: {
-    padding: '12px 16px',
-    borderBottom: '1px solid #1e293b',
+    padding: '14px 16px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
+    borderBottom: '1px solid var(--glass-border-subtle)',
+    backgroundColor: 'var(--glass-bg-subtle)',
   },
   title: {
-    fontSize: '13px',
-    fontWeight: '600',
-    color: '#e2e8f0',
-    textTransform: 'uppercase',
-    letterSpacing: '0.05em',
-  },
-  badge: {
-    fontSize: '11px',
-    color: '#10b981',
-    backgroundColor: '#064e3b',
-    padding: '2px 8px',
-    borderRadius: '10px',
-    fontWeight: '500',
+    fontSize: '0.875rem',
+    fontWeight: '700',
+    color: 'var(--text-primary)',
   },
   list: {
     flex: 1,
     overflowY: 'auto',
-    padding: '8px 12px',
+    padding: '14px',
     display: 'flex',
     flexDirection: 'column',
-    gap: '6px',
+    gap: '8px',
   },
   userCard: {
     display: 'flex',
     alignItems: 'center',
     gap: '12px',
-    padding: '8px 10px',
-    borderRadius: '8px',
-    backgroundColor: '#1e293b',
-    border: '1px solid #334155',
-    transition: 'background-color 0.15s ease',
+    padding: '10px 12px',
+    borderRadius: 'var(--radius-md)',
   },
   avatarContainer: {
     position: 'relative',
-    flexShrink: 0,
   },
   avatar: {
-    width: '34px',
-    height: '34px',
+    width: '32px',
+    height: '32px',
     borderRadius: '50%',
-    color: '#ffffff',
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontSize: '0.8125rem',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontWeight: '600',
-    fontSize: '14px',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
   },
   statusDot: {
     position: 'absolute',
     bottom: '-1px',
     right: '-1px',
-    width: '10px',
-    height: '10px',
+    width: '9px',
+    height: '9px',
     borderRadius: '50%',
-    border: '2px solid #1e293b',
+    border: '2px solid var(--bg-base)',
   },
   userInfo: {
     flex: 1,
@@ -255,65 +229,33 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     gap: '6px',
+    marginBottom: '2px',
   },
   name: {
-    fontSize: '13px',
-    fontWeight: '500',
-    color: '#f8fafc',
+    fontSize: '0.8125rem',
+    fontWeight: '600',
+    color: 'var(--text-primary)',
+    whiteSpace: 'nowrap',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
-  },
-  youBadge: {
-    fontSize: '10px',
-    fontWeight: '600',
-    color: '#38bdf8',
-    backgroundColor: '#0369a133',
-    padding: '1px 5px',
-    borderRadius: '4px',
-    textTransform: 'uppercase',
-  },
-  roleBadge: {
-    fontSize: '10px',
-    fontWeight: '500',
-    padding: '1px 6px',
-    borderRadius: '4px',
-    border: '1px solid',
-    textTransform: 'capitalize',
-    marginLeft: 'auto',
   },
   statusRow: {
-    display: 'flex',
-    alignItems: 'center',
-    marginTop: '2px',
-    minHeight: '16px',
+    fontSize: '0.6875rem',
   },
   typingContainer: {
-    display: 'flex',
+    display: 'inline-flex',
     alignItems: 'center',
     gap: '4px',
-  },
-  typingPencil: {
-    fontSize: '11px',
+    color: 'var(--primary)',
+    fontWeight: '500',
   },
   typingText: {
-    fontSize: '11px',
-    fontWeight: '500',
-    color: '#38bdf8',
-  },
-  dots: {
-    display: 'inline-flex',
-    color: '#38bdf8',
-    fontWeight: 'bold',
-    fontSize: '12px',
+    color: 'var(--primary)',
   },
   cursorActiveText: {
-    fontSize: '11px',
-    color: '#34d399',
+    color: 'var(--secondary)',
   },
   offlineText: {
-    fontSize: '11px',
-    color: '#64748b',
+    color: 'var(--text-muted)',
   },
 };
-

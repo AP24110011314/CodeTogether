@@ -15,6 +15,7 @@ import { ShortcutsModal } from '../components/common/ShortcutsModal.jsx';
 import { toast } from '../store/toastStore.js';
 import { getLanguagesApi, getRoomRunsApi } from '../api/runs.js';
 import { initSocket, disconnectSocket, getSocket } from '../lib/socket.js';
+import { MessageSquare, Users, X, RefreshCw, Lock, ArrowLeft, Loader2 } from 'lucide-react';
 
 export default function Room() {
   const { slug } = useParams();
@@ -98,8 +99,7 @@ export default function Room() {
     setRunError(null);
     setActiveRun({
       status: 'queued',
-      position: 1,
-      by: { id: user?.id, name: user?.name, color: user?.avatarColor },
+      by: { id: user?.id, name: user?.name },
     });
     setBottomTab('output');
     setIsBottomOpen(true);
@@ -108,58 +108,53 @@ export default function Room() {
       'run:start',
       {
         roomId: room.id,
-        language: language || room.language || 'javascript',
         stdin: stdin || '',
       },
       (ack) => {
-        if (ack && !ack.ok) {
+        if (!ack?.ok) {
           setActiveRun(null);
-          setRunError({ message: ack.error || 'Execution rejected' });
+          setRunError(ack?.error?.message || 'Failed to start execution');
         }
       }
     );
   };
 
-  const handleReconnect = () => {
-    if (accessToken) {
-      setConnectionStatus('connecting');
-      initSocket(accessToken);
-      toast.info('Reconnecting to server...');
-    }
-  };
-
-  // Resize listener for responsive layout (< 900px collapses side panel)
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth < 900 && isSideOpen) {
-        setIsSideOpen(false);
-      }
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [isSideOpen]);
-
-  // Keyboard shortcuts: Cmd/Ctrl+S, Cmd/Ctrl+Enter, Cmd/Ctrl+B, Cmd/Ctrl+J, ?, Escape
+  // Keyboard shortcuts listener
   useEffect(() => {
     const handleKeyDown = (e) => {
-      const isInput = ['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName);
+      const isCmdOrCtrl = e.metaKey || e.ctrlKey;
 
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
-        e.preventDefault();
-        handleOpenSaveSnippet();
-      } else if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+      if (isCmdOrCtrl && e.key === 'Enter') {
         e.preventDefault();
         handleRunCode();
-      } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'b') {
+        return;
+      }
+
+      if (isCmdOrCtrl && (e.key === 's' || e.key === 'S')) {
+        e.preventDefault();
+        handleOpenSaveSnippet();
+        return;
+      }
+
+      if (isCmdOrCtrl && (e.key === 'b' || e.key === 'B')) {
         e.preventDefault();
         setIsSideOpen((prev) => !prev);
-      } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'j') {
+        return;
+      }
+
+      if (isCmdOrCtrl && (e.key === 'j' || e.key === 'J')) {
         e.preventDefault();
         setIsBottomOpen((prev) => !prev);
-      } else if (e.key === '?' && !isInput) {
+        return;
+      }
+
+      if (e.key === '?' && !e.target.matches('input, textarea, [contenteditable="true"]')) {
         e.preventDefault();
         setIsShortcutsOpen((prev) => !prev);
-      } else if (e.key === 'Escape') {
+        return;
+      }
+
+      if (e.key === 'Escape') {
         setIsShareOpen(false);
         setIsMembersOpen(false);
         setIsSaveSnippetOpen(false);
@@ -167,36 +162,55 @@ export default function Room() {
         setIsShortcutsOpen(false);
       }
     };
+
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [role, room?.id, language, stdin, user]);
+  }, [role, room?.id, stdin, user]);
 
-  // Tabs for right side panel and bottom panel
+  // Responsive auto-collapse under 900px
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 900) {
+        setIsSideOpen(false);
+      } else {
+        setIsSideOpen(true);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const [sideTab, setSideTab] = useState('chat'); // 'chat' | 'users'
   const sideTabRef = useRef(sideTab);
-  sideTabRef.current = sideTab;
+  useEffect(() => {
+    sideTabRef.current = sideTab;
+  }, [sideTab]);
 
   const [bottomTab, setBottomTab] = useState('output'); // 'output' | 'stdin' | 'history'
-  const [isBottomOpen, setIsBottomOpen] = useState(true);
+  const [isBottomOpen, setIsBottomOpen] = useState(false);
 
-  // Fetch available language runtimes
+  // Load language runtimes at mount
   useEffect(() => {
     getLanguagesApi()
       .then((data) => {
-        if (data?.languages) setAvailableLanguages(data.languages);
+        if (data.languages) {
+          setAvailableLanguages(data.languages);
+        }
       })
-      .catch((err) => console.warn('Failed to load sandbox languages:', err));
+      .catch((err) => console.warn('Could not probe sandbox languages:', err));
   }, [setAvailableLanguages]);
 
-  // Fetch past run history for this room
+  // Load execution history on room change
   useEffect(() => {
-    if (room?.id) {
-      getRoomRunsApi(room.id)
-        .then((data) => {
-          if (data?.runs) setRuns(data.runs);
-        })
-        .catch((err) => console.warn('Failed to load room run history:', err));
-    }
+    if (!room?.id) return;
+    getRoomRunsApi(room.id, 20)
+      .then((data) => {
+        if (data.runs) {
+          setRuns(data.runs);
+        }
+      })
+      .catch((err) => console.warn('Could not load runs history:', err));
   }, [room?.id, setRuns]);
 
   // Initial room REST fetch
@@ -300,53 +314,56 @@ export default function Room() {
     });
 
     socket.on('run:result', (payload) => {
+      const result = payload.run;
       setActiveRun(null);
-      setLatestRunResult(payload);
-      addRun(payload);
-      setRunError(null);
-      setBottomTab('output');
-      setIsBottomOpen(true);
-    });
-
-    socket.on('run:rejected', (payload) => {
-      setActiveRun(null);
-      setRunError(payload);
+      setLatestRunResult(result);
+      addRun(result);
       setBottomTab('output');
       setIsBottomOpen(true);
     });
 
     return () => {
-      if (socket.connected) {
-        socket.emit('room:leave', { roomId: room.id });
-      }
+      socket.emit('room:leave', { roomId: room.id });
       disconnectSocket();
-      setConnectionStatus('disconnected');
     };
   }, [
     accessToken,
     room?.id,
     slug,
     searchParams,
+    navigate,
     setRoom,
     setMembers,
     setMessages,
     addMessage,
     incrementUnread,
     setLanguage,
-    setConnectionStatus,
     setActiveRun,
     setLatestRunResult,
     addRun,
     setRunError,
-    user?.id,
-    navigate,
+    setConnectionStatus,
   ]);
+
+  const handleReconnect = () => {
+    if (!accessToken || !room?.id) return;
+    setConnectionStatus('connecting');
+    const socket = initSocket(accessToken);
+    socket.connect();
+  };
 
   if (isLoading) {
     return (
       <div style={styles.centerContainer}>
-        <div style={styles.spinner}></div>
-        <p style={{ marginTop: '16px', color: '#94a3b8' }}>Loading workspace...</p>
+        <div className="glass-strong" style={styles.loadingBox}>
+          <div className="mac-traffic-lights" style={{ marginBottom: '14px' }}>
+            <span className="mac-dot mac-dot-close" />
+            <span className="mac-dot mac-dot-min" />
+            <span className="mac-dot mac-dot-max" />
+          </div>
+          <Loader2 size={28} className="spinner" style={{ animation: 'spin 1s linear infinite', color: 'var(--primary)', marginBottom: '8px' }} />
+          <span style={styles.loadingText}>Initializing Workspace Canvas...</span>
+        </div>
       </div>
     );
   }
@@ -355,18 +372,21 @@ export default function Room() {
     const isForbidden = error.code === 'FORBIDDEN' || error.response?.status === 403;
     return (
       <div style={styles.centerContainer}>
-        <div style={styles.errorCard}>
-          <div style={{ fontSize: '40px', marginBottom: '12px' }}>🔒</div>
+        <div className="glass-strong" style={styles.errorCard}>
+          <div style={styles.errorIconBox}>
+            <Lock size={32} style={{ color: 'var(--accent)' }} />
+          </div>
           <h2 style={styles.errorTitle}>
-            {isForbidden ? 'Access Denied' : 'Unable to Load Room'}
+            {isForbidden ? 'Private Workspace' : 'Unable to Load Room'}
           </h2>
           <p style={styles.errorSubtitle}>
             {typeof error === 'object' && error.message
               ? error.message
-              : 'This room is private or does not exist.'}
+              : 'This room requires an invite link or read-only token to join.'}
           </p>
-          <button onClick={() => navigate('/')} style={styles.backButton}>
-            Back to Dashboard
+          <button onClick={() => navigate('/')} className="btn btn-primary" style={{ gap: '6px' }}>
+            <ArrowLeft size={16} />
+            <span>Return to Dashboard</span>
           </button>
         </div>
       </div>
@@ -386,7 +406,7 @@ export default function Room() {
             <span
               style={{
                 ...styles.reconnectDot,
-                backgroundColor: connectionStatus === 'connecting' ? '#eab308' : '#ef4444',
+                backgroundColor: connectionStatus === 'connecting' ? 'var(--warning)' : 'var(--danger)',
               }}
             />
             <span>
@@ -396,13 +416,15 @@ export default function Room() {
             </span>
           </div>
           {connectionStatus === 'disconnected' && (
-            <button onClick={handleReconnect} style={styles.reconnectButton}>
-              Reconnect Now
+            <button onClick={handleReconnect} className="btn btn-secondary" style={{ padding: '2px 8px', fontSize: '0.75rem', height: '24px' }}>
+              <RefreshCw size={12} />
+              <span>Reconnect Now</span>
             </button>
           )}
         </div>
       )}
 
+      {/* Translucent Toolbar */}
       <Toolbar
         onShareClick={() => setIsShareOpen(true)}
         onMembersClick={() => setIsMembersOpen(true)}
@@ -412,19 +434,14 @@ export default function Room() {
         onShortcutsClick={() => setIsShortcutsOpen(true)}
       />
 
+      {/* Main Workspace Frame */}
       <div style={styles.workspace}>
-        {/* Main Editor & Bottom Panel Area */}
-        <div
-          style={{
-            ...styles.editorArea,
-            borderRight: isSideOpen ? '1px solid #334155' : 'none',
-          }}
-        >
+        {/* Main Editor & Output Panel Area */}
+        <div style={styles.editorArea}>
           <div style={styles.editorContainer}>
             <CodeEditor onEditorMount={(ed) => { editorRef.current = ed; }} />
           </div>
 
-          {/* Bottom Execution Panel */}
           <OutputPanel
             isBottomOpen={isBottomOpen}
             setIsBottomOpen={setIsBottomOpen}
@@ -435,7 +452,7 @@ export default function Room() {
 
         {/* Right Side Panel: Chat & Presence */}
         {isSideOpen && (
-          <div style={styles.sidePanel}>
+          <aside className="glass" style={styles.sidePanel}>
             <div style={styles.sideHeader}>
               <div style={styles.sideHeaderTabs}>
                 <button
@@ -448,9 +465,12 @@ export default function Room() {
                     ...(sideTab === 'chat' ? styles.activeSideTab : {}),
                   }}
                 >
-                  <span>💬 Chat</span>
+                  <MessageSquare size={14} />
+                  <span>Chat</span>
                   {unreadMessagesCount > 0 && sideTab !== 'chat' && (
-                    <span style={styles.unreadBadge}>{unreadMessagesCount}</span>
+                    <span className="badge-glass badge-primary" style={{ fontSize: '0.625rem', padding: '1px 5px' }}>
+                      {unreadMessagesCount}
+                    </span>
                   )}
                 </button>
                 <button
@@ -460,37 +480,49 @@ export default function Room() {
                     ...(sideTab === 'users' ? styles.activeSideTab : {}),
                   }}
                 >
-                  👥 Online ({onlineCount}/{members.length || 1})
+                  <Users size={14} />
+                  <span>Participants ({onlineCount})</span>
                 </button>
               </div>
 
               <button
                 onClick={() => setIsSideOpen(false)}
-                style={styles.sideCollapseButton}
+                className="btn-ghost"
+                style={styles.sideCollapseBtn}
                 title="Collapse side panel (Cmd/Ctrl+B)"
+                aria-label="Collapse panel"
               >
-                ✕
+                <X size={15} />
               </button>
             </div>
 
             <div style={styles.sideContent}>
               {sideTab === 'chat' ? <ChatPanel /> : <UserList />}
             </div>
-          </div>
+          </aside>
         )}
 
-        {/* Floating Button to open side panel when collapsed */}
+        {/* Floating Toggle Button when side panel is collapsed */}
         {!isSideOpen && (
           <button
             onClick={() => setIsSideOpen(true)}
-            style={styles.openSideButton}
-            title="Open Chat & Users (Cmd/Ctrl+B)"
+            className="btn btn-primary"
+            style={styles.openSideBtn}
+            title="Open Chat & Participants (Cmd/Ctrl+B)"
+            aria-label="Open sidebar"
           >
-            💬 ({onlineCount})
+            <MessageSquare size={15} />
+            <span>Chat ({onlineCount})</span>
+            {unreadMessagesCount > 0 && (
+              <span className="badge-glass badge-accent" style={{ fontSize: '0.625rem', padding: '1px 5px' }}>
+                {unreadMessagesCount}
+              </span>
+            )}
           </button>
         )}
       </div>
 
+      {/* Modals */}
       <ShareModal isOpen={isShareOpen} onClose={() => setIsShareOpen(false)} />
       <MembersModal isOpen={isMembersOpen} onClose={() => setIsMembersOpen(false)} />
       <SaveSnippetModal
@@ -517,356 +549,167 @@ const styles = {
     height: '100vh',
     display: 'flex',
     flexDirection: 'column',
-    backgroundColor: '#0f172a',
-    color: '#f8fafc',
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
     overflow: 'hidden',
+  },
+  centerContainer: {
+    minHeight: '100vh',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '24px',
+  },
+  loadingBox: {
+    padding: '32px 48px',
+    borderRadius: 'var(--radius-xl)',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    fontSize: '0.875rem',
+    color: 'var(--text-secondary)',
+    fontWeight: '500',
+  },
+  errorCard: {
+    padding: '40px',
+    borderRadius: 'var(--radius-xl)',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    textAlign: 'center',
+    maxWidth: '440px',
+    width: '100%',
+  },
+  errorIconBox: {
+    width: '64px',
+    height: '64px',
+    borderRadius: '50%',
+    backgroundColor: 'rgba(245, 158, 11, 0.12)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: '16px',
+  },
+  errorTitle: {
+    fontSize: '1.25rem',
+    fontWeight: '700',
+    color: 'var(--text-primary)',
+    marginBottom: '8px',
+  },
+  errorSubtitle: {
+    fontSize: '0.875rem',
+    color: 'var(--text-secondary)',
+    marginBottom: '24px',
+    lineHeight: '1.5',
   },
   reconnectBanner: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#7f1d1d',
-    color: '#fef2f2',
+    backgroundColor: 'rgba(239, 68, 68, 0.12)',
+    color: 'var(--danger)',
     padding: '6px 16px',
-    fontSize: '12px',
-    borderBottom: '1px solid #ef4444',
+    fontSize: '0.75rem',
+    borderBottom: '1px solid rgba(239, 68, 68, 0.25)',
+    zIndex: 30,
   },
   reconnectInfo: {
     display: 'flex',
     alignItems: 'center',
     gap: '8px',
+    fontWeight: '500',
   },
   reconnectDot: {
     width: '8px',
     height: '8px',
     borderRadius: '50%',
   },
-  reconnectButton: {
-    backgroundColor: '#ef4444',
-    color: '#ffffff',
-    border: 'none',
-    borderRadius: '4px',
-    padding: '3px 8px',
-    fontSize: '11px',
-    fontWeight: '600',
-    cursor: 'pointer',
-  },
-  openSideButton: {
-    position: 'fixed',
-    right: '16px',
-    bottom: '70px',
-    backgroundColor: '#0284c7',
-    color: '#ffffff',
-    border: 'none',
-    borderRadius: '20px',
-    padding: '8px 14px',
-    fontSize: '12px',
-    fontWeight: '600',
-    cursor: 'pointer',
-    zIndex: 100,
-    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)',
-  },
   workspace: {
     flex: 1,
     display: 'flex',
     overflow: 'hidden',
+    position: 'relative',
   },
   editorArea: {
     flex: 1,
     display: 'flex',
     flexDirection: 'column',
     overflow: 'hidden',
-    borderRight: '1px solid #334155',
   },
   editorContainer: {
     flex: 1,
     overflow: 'hidden',
-  },
-  bottomPanel: {
-    backgroundColor: '#1e293b',
-    borderTop: '1px solid #334155',
-    display: 'flex',
-    flexDirection: 'column',
-    flexShrink: 0,
-  },
-  bottomHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '4px 12px',
-    backgroundColor: '#0f172a',
-    borderBottom: '1px solid #334155',
-  },
-  bottomTabs: {
-    display: 'flex',
-    gap: '4px',
-  },
-  panelTab: {
-    padding: '6px 12px',
-    background: 'none',
-    border: 'none',
-    color: '#94a3b8',
-    fontSize: '12px',
-    fontWeight: '600',
-    cursor: 'pointer',
-    borderRadius: '4px',
-  },
-  activePanelTab: {
-    backgroundColor: '#1e293b',
-    color: '#38bdf8',
-  },
-  collapseButton: {
-    background: 'none',
-    border: 'none',
-    color: '#94a3b8',
-    cursor: 'pointer',
-    fontSize: '10px',
-    padding: '4px 8px',
-  },
-  bottomContent: {
-    height: '160px',
-    padding: '12px',
-    overflowY: 'auto',
-    backgroundColor: '#090d16',
-    fontFamily: 'monospace',
-    fontSize: '13px',
-  },
-  outputBox: {
-    height: '100%',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stdinTextarea: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: 'transparent',
-    color: '#f8fafc',
-    border: 'none',
-    outline: 'none',
-    resize: 'none',
-    fontFamily: 'monospace',
-    fontSize: '13px',
+    backgroundColor: 'var(--editor-bg)',
   },
   sidePanel: {
     width: '320px',
-    backgroundColor: '#1e293b',
     display: 'flex',
     flexDirection: 'column',
+    borderRadius: 0,
+    borderTop: 'none',
+    borderBottom: 'none',
+    borderRight: 'none',
+    borderLeft: '1px solid var(--glass-border)',
+    overflow: 'hidden',
     flexShrink: 0,
+    zIndex: 10,
   },
   sideHeader: {
+    height: '40px',
     display: 'flex',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    borderBottom: '1px solid #334155',
-    backgroundColor: '#0f172a',
-    paddingRight: '6px',
+    justifyContent: 'space-between',
+    padding: '0 10px 0 14px',
+    borderBottom: '1px solid var(--glass-border-subtle)',
+    backgroundColor: 'var(--glass-bg-subtle)',
+    flexShrink: 0,
   },
   sideHeaderTabs: {
     display: 'flex',
-    flex: 1,
-  },
-  sideCollapseButton: {
-    background: 'none',
-    border: 'none',
-    color: '#94a3b8',
-    cursor: 'pointer',
-    padding: '6px 8px',
-    fontSize: '13px',
-    borderRadius: '4px',
-    lineHeight: 1,
-  },
-  sideTab: {
-    flex: 1,
-    padding: '10px',
-    background: 'none',
-    border: 'none',
-    color: '#94a3b8',
-    fontSize: '13px',
-    fontWeight: '600',
-    cursor: 'pointer',
-    textAlign: 'center',
-    display: 'flex',
     alignItems: 'center',
-    justifyContent: 'center',
     gap: '4px',
   },
-  unreadBadge: {
-    backgroundColor: '#ef4444',
-    color: '#ffffff',
-    fontSize: '10px',
-    fontWeight: '700',
-    padding: '1px 6px',
-    borderRadius: '10px',
+  sideTab: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '5px 8px',
+    background: 'transparent',
+    border: 'none',
+    color: 'var(--text-secondary)',
+    fontSize: '0.75rem',
+    fontWeight: '500',
+    cursor: 'pointer',
+    borderRadius: 'var(--radius-sm)',
+    transition: 'all var(--transition-fast)',
   },
   activeSideTab: {
-    color: '#38bdf8',
-    borderBottom: '2px solid #38bdf8',
-    backgroundColor: '#1e293b',
+    background: 'var(--glass-bg-strong)',
+    color: 'var(--primary)',
+    fontWeight: '600',
+    boxShadow: 'var(--glass-shadow)',
+  },
+  sideCollapseBtn: {
+    padding: '4px',
+    borderRadius: 'var(--radius-sm)',
+    color: 'var(--text-muted)',
   },
   sideContent: {
     flex: 1,
-    display: 'flex',
-    flexDirection: 'column',
     overflow: 'hidden',
-    padding: 0,
-  },
-  chatPlaceholder: {
-    flex: 1,
     display: 'flex',
     flexDirection: 'column',
-    justifyContent: 'space-between',
   },
-  emptyNotice: {
-    flex: 1,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    textAlign: 'center',
-    color: '#64748b',
-    fontSize: '13px',
-    padding: '16px',
-  },
-  chatInputRow: {
-    display: 'flex',
-    gap: '6px',
-    marginTop: '12px',
-  },
-  chatInput: {
-    flex: 1,
-    padding: '8px 10px',
-    backgroundColor: '#0f172a',
-    border: '1px solid #475569',
-    borderRadius: '6px',
-    color: '#f8fafc',
-    fontSize: '13px',
-  },
-  sendButton: {
-    padding: '8px 12px',
-    backgroundColor: '#334155',
-    color: '#94a3b8',
-    border: 'none',
-    borderRadius: '6px',
-    fontSize: '12px',
-    fontWeight: '600',
-  },
-  usersList: {
-    display: 'flex',
-    flexDirection: 'column',
+  openSideBtn: {
+    position: 'fixed',
+    right: '20px',
+    bottom: '60px',
+    padding: '8px 14px',
+    borderRadius: 'var(--radius-full)',
+    fontSize: '0.8125rem',
+    boxShadow: '0 8px 24px rgba(var(--primary-rgb), 0.45)',
+    zIndex: 50,
     gap: '8px',
-  },
-  userRow: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
-    padding: '8px 10px',
-    backgroundColor: '#0f172a',
-    borderRadius: '8px',
-    border: '1px solid #334155',
-  },
-  userAvatar: {
-    width: '32px',
-    height: '32px',
-    borderRadius: '50%',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontWeight: '700',
-    fontSize: '13px',
-    color: '#ffffff',
-    flexShrink: 0,
-  },
-  userDetails: {
-    flex: 1,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '2px',
-  },
-  userNameRow: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-  },
-  userName: {
-    fontSize: '13px',
-    fontWeight: '600',
-    color: '#f8fafc',
-  },
-  youBadge: {
-    fontSize: '10px',
-    color: '#38bdf8',
-    fontWeight: '600',
-  },
-  statusRow: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '5px',
-  },
-  statusDot: {
-    width: '7px',
-    height: '7px',
-    borderRadius: '50%',
-  },
-  statusText: {
-    fontSize: '11px',
-    color: '#94a3b8',
-  },
-  userRoleTag: {
-    fontSize: '11px',
-    color: '#94a3b8',
-    backgroundColor: '#1e293b',
-    padding: '2px 8px',
-    borderRadius: '4px',
-    textTransform: 'capitalize',
-    fontWeight: '500',
-  },
-  centerContainer: {
-    minHeight: '100vh',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#0f172a',
-    padding: '20px',
-  },
-  spinner: {
-    width: '40px',
-    height: '40px',
-    border: '3px solid #334155',
-    borderTopColor: '#38bdf8',
-    borderRadius: '50%',
-    animation: 'spin 1s linear infinite',
-  },
-  errorCard: {
-    backgroundColor: '#1e293b',
-    border: '1px solid #334155',
-    borderRadius: '12px',
-    padding: '36px',
-    textAlign: 'center',
-    maxWidth: '460px',
-  },
-  errorTitle: {
-    fontSize: '20px',
-    fontWeight: '700',
-    color: '#f8fafc',
-    margin: '0 0 8px 0',
-  },
-  errorSubtitle: {
-    fontSize: '14px',
-    color: '#94a3b8',
-    margin: '0 0 20px 0',
-    lineHeight: '1.5',
-  },
-  backButton: {
-    padding: '10px 20px',
-    backgroundColor: '#0284c7',
-    color: '#ffffff',
-    border: 'none',
-    borderRadius: '6px',
-    fontSize: '14px',
-    fontWeight: '600',
-    cursor: 'pointer',
   },
 };

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { SUPPORTED_LANGUAGES } from '../editor/LanguageSelect.jsx';
 import { useRoomStore } from '../../store/roomStore.js';
+import { X, PlusCircle, Globe, Lock, Loader2, Sparkles } from 'lucide-react';
 
 export function CreateRoomModal({ isOpen, onClose, onCreated }) {
   const [name, setName] = useState('');
@@ -19,7 +20,7 @@ export function CreateRoomModal({ isOpen, onClose, onCreated }) {
     setError('');
 
     if (!name.trim()) {
-      setError('Please provide a room name');
+      setError('Please provide a workspace title');
       return;
     }
 
@@ -41,40 +42,56 @@ export function CreateRoomModal({ isOpen, onClose, onCreated }) {
   };
 
   return (
-    <div style={styles.overlay} onClick={onClose}>
-      <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+    <div className="modal-backdrop" onClick={onClose} role="dialog" aria-modal="true">
+      <div
+        className="glass-strong modal-content"
+        onClick={(e) => e.stopPropagation()}
+        style={styles.modalBox}
+      >
         <div style={styles.header}>
-          <h2 style={styles.title}>Create New Room</h2>
-          <button onClick={onClose} style={styles.closeButton}>
-            ✕
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div className="mac-traffic-lights">
+              <span className="mac-dot mac-dot-close" onClick={onClose} style={{ cursor: 'pointer' }} />
+              <span className="mac-dot mac-dot-min" />
+              <span className="mac-dot mac-dot-max" />
+            </div>
+            <h3 style={styles.title}>New Collaborative Workspace</h3>
+          </div>
+          <button onClick={onClose} className="btn-ghost" style={styles.closeBtn} aria-label="Close modal">
+            <X size={18} />
           </button>
         </div>
 
-        {error && <div style={styles.error}>{error}</div>}
+        {error && (
+          <div role="alert" style={styles.errorBox}>
+            {error}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} style={styles.form}>
           <div style={styles.field}>
-            <label style={styles.label}>Room Name</label>
+            <label style={styles.label}>Workspace Title</label>
             <input
               type="text"
+              className="input-glass"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. LeetCode Practice, React Component Review"
+              placeholder="e.g. Distributed Systems Lab, Binary Search Tree Demo"
               required
-              style={styles.input}
               autoFocus
             />
           </div>
 
           <div style={styles.field}>
-            <label style={styles.label}>Programming Language</label>
+            <label style={styles.label}>Language Runtime</label>
             <select
               value={language}
               onChange={(e) => setLanguage(e.target.value)}
-              style={styles.select}
+              className="input-glass"
+              style={{ cursor: 'pointer' }}
             >
               {SUPPORTED_LANGUAGES.map((lang) => (
-                <option key={lang.id} value={lang.id}>
+                <option key={lang.id} value={lang.id} style={{ background: 'var(--bg-base)' }}>
                   {lang.label}
                 </option>
               ))}
@@ -82,62 +99,77 @@ export function CreateRoomModal({ isOpen, onClose, onCreated }) {
           </div>
 
           <div style={styles.field}>
-            <label style={styles.label}>Visibility</label>
-            <div style={styles.radioGroup}>
-              <label style={styles.radioLabel}>
-                <input
-                  type="radio"
-                  name="visibility"
-                  value="public"
-                  checked={visibility === 'public'}
-                  onChange={() => setVisibility('public')}
-                />
-                <span style={styles.radioText}>
-                  <strong>Public</strong> (Anyone with room link can join)
-                </span>
-              </label>
-              <label style={styles.radioLabel}>
-                <input
-                  type="radio"
-                  name="visibility"
-                  value="private"
-                  checked={visibility === 'private'}
-                  onChange={() => setVisibility('private')}
-                />
-                <span style={styles.radioText}>
-                  <strong>Private</strong> (Requires invite or view token)
-                </span>
-              </label>
+            <label style={styles.label}>Visibility & Access</label>
+            <div style={styles.visibilityGrid}>
+              <div
+                onClick={() => setVisibility('public')}
+                className={visibility === 'public' ? 'glass' : 'glass-subtle'}
+                style={{
+                  ...styles.visCard,
+                  borderColor: visibility === 'public' ? 'var(--primary)' : 'var(--glass-border-subtle)',
+                }}
+              >
+                <div style={styles.visIconWrapper}>
+                  <Globe size={18} style={{ color: 'var(--primary)' }} />
+                </div>
+                <div>
+                  <div style={styles.visTitle}>Public Classroom</div>
+                  <div style={styles.visDesc}>Anyone with the room link can join and collaborate</div>
+                </div>
+              </div>
+
+              <div
+                onClick={() => setVisibility('private')}
+                className={visibility === 'private' ? 'glass' : 'glass-subtle'}
+                style={{
+                  ...styles.visCard,
+                  borderColor: visibility === 'private' ? 'var(--accent)' : 'var(--glass-border-subtle)',
+                }}
+              >
+                <div style={styles.visIconWrapper}>
+                  <Lock size={18} style={{ color: 'var(--accent)' }} />
+                </div>
+                <div>
+                  <div style={styles.visTitle}>Private Workspace</div>
+                  <div style={styles.visDesc}>Only explicit invitees or secret token holders can enter</div>
+                </div>
+              </div>
             </div>
           </div>
 
           <div style={styles.field}>
-            <label style={styles.label}>Default Member Role</label>
+            <label style={styles.label}>Default Participant Permission</label>
             <select
               value={defaultRole}
               onChange={(e) => setDefaultRole(e.target.value)}
-              style={styles.select}
+              className="input-glass"
+              style={{ cursor: 'pointer' }}
             >
-              <option value="editor">Editor (Can edit code, chat, execute)</option>
-              <option value="viewer">Viewer (Read-only)</option>
+              <option value="editor" style={{ background: 'var(--bg-base)' }}>
+                Editor (Can write code, execute runs & chat)
+              </option>
+              <option value="viewer" style={{ background: 'var(--bg-base)' }}>
+                Viewer (Read-only observation mode)
+              </option>
             </select>
           </div>
 
           <div style={styles.actions}>
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isSubmitting}
-              style={styles.cancelButton}
-            >
+            <button type="button" onClick={onClose} className="btn btn-secondary">
               Cancel
             </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              style={styles.submitButton}
-            >
-              {isSubmitting ? 'Creating...' : 'Create Room'}
+            <button type="submit" disabled={isSubmitting} className="btn btn-primary">
+              {isSubmitting ? (
+                <>
+                  <Loader2 size={16} className="spinner" style={{ animation: 'spin 1s linear infinite' }} />
+                  <span>Creating Workspace...</span>
+                </>
+              ) : (
+                <>
+                  <PlusCircle size={16} />
+                  <span>Create Workspace</span>
+                </>
+              )}
             </button>
           </div>
         </form>
@@ -147,55 +179,38 @@ export function CreateRoomModal({ isOpen, onClose, onCreated }) {
 }
 
 const styles = {
-  overlay: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 1000,
-    backdropFilter: 'blur(2px)',
-  },
-  modal: {
+  modalBox: {
     width: '100%',
-    maxWidth: '480px',
-    backgroundColor: '#1e293b',
-    borderRadius: '12px',
-    border: '1px solid #334155',
+    maxWidth: '520px',
     padding: '24px',
-    color: '#f8fafc',
-    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)',
+    boxShadow: 'var(--glass-shadow-lg)',
   },
   header: {
     display: 'flex',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: '20px',
+    paddingBottom: '14px',
+    borderBottom: '1px solid var(--glass-border-subtle)',
   },
   title: {
-    fontSize: '20px',
+    fontSize: '1.125rem',
     fontWeight: '700',
+    color: 'var(--text-primary)',
     margin: 0,
-    color: '#f8fafc',
   },
-  closeButton: {
-    background: 'none',
-    border: 'none',
-    color: '#94a3b8',
-    fontSize: '18px',
-    cursor: 'pointer',
+  closeBtn: {
+    padding: '6px',
+    borderRadius: 'var(--radius-sm)',
+    color: 'var(--text-muted)',
   },
-  error: {
-    padding: '10px 12px',
-    backgroundColor: '#451a1a',
-    border: '1px solid #ef4444',
-    color: '#fca5a5',
-    borderRadius: '6px',
-    fontSize: '13px',
+  errorBox: {
+    padding: '10px 14px',
+    borderRadius: 'var(--radius-md)',
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    border: '1px solid rgba(239, 68, 68, 0.3)',
+    color: 'var(--danger)',
+    fontSize: '0.8125rem',
     marginBottom: '16px',
   },
   form: {
@@ -209,72 +224,43 @@ const styles = {
     gap: '6px',
   },
   label: {
-    fontSize: '13px',
-    fontWeight: '500',
-    color: '#cbd5e1',
+    fontSize: '0.8125rem',
+    fontWeight: '600',
+    color: 'var(--text-primary)',
   },
-  input: {
-    padding: '10px 12px',
-    backgroundColor: '#0f172a',
-    border: '1px solid #475569',
-    borderRadius: '6px',
-    color: '#f8fafc',
-    fontSize: '14px',
-    outline: 'none',
+  visibilityGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr',
+    gap: '10px',
   },
-  select: {
-    padding: '10px 12px',
-    backgroundColor: '#0f172a',
-    border: '1px solid #475569',
-    borderRadius: '6px',
-    color: '#f8fafc',
-    fontSize: '14px',
-    outline: 'none',
-  },
-  radioGroup: {
+  visCard: {
     display: 'flex',
-    flexDirection: 'column',
-    gap: '8px',
-    backgroundColor: '#0f172a',
-    padding: '10px 12px',
-    borderRadius: '6px',
-    border: '1px solid #475569',
-  },
-  radioLabel: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
+    alignItems: 'flex-start',
+    gap: '12px',
+    padding: '12px',
     cursor: 'pointer',
+    borderRadius: 'var(--radius-md)',
+    transition: 'all var(--transition-fast)',
   },
-  radioText: {
-    fontSize: '13px',
-    color: '#cbd5e1',
+  visIconWrapper: {
+    marginTop: '2px',
+  },
+  visTitle: {
+    fontSize: '0.875rem',
+    fontWeight: '600',
+    color: 'var(--text-primary)',
+    marginBottom: '2px',
+  },
+  visDesc: {
+    fontSize: '0.75rem',
+    color: 'var(--text-secondary)',
   },
   actions: {
     display: 'flex',
     justifyContent: 'flex-end',
     gap: '10px',
-    marginTop: '12px',
-  },
-  cancelButton: {
-    padding: '9px 16px',
-    backgroundColor: '#334155',
-    color: '#cbd5e1',
-    border: 'none',
-    borderRadius: '6px',
-    fontSize: '13px',
-    fontWeight: '500',
-    cursor: 'pointer',
-  },
-  submitButton: {
-    padding: '9px 18px',
-    backgroundColor: '#0284c7',
-    color: '#ffffff',
-    border: 'none',
-    borderRadius: '6px',
-    fontSize: '13px',
-    fontWeight: '600',
-    cursor: 'pointer',
+    marginTop: '10px',
+    paddingTop: '16px',
+    borderTop: '1px solid var(--glass-border-subtle)',
   },
 };
-

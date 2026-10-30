@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getSnippetsApi } from '../../api/snippets.js';
+import { FileInput, Search, X, Loader2 } from 'lucide-react';
 
 export function InsertSnippetModal({ isOpen, onClose, onInsert }) {
   const [snippets, setSnippets] = useState([]);
@@ -38,33 +39,56 @@ export function InsertSnippetModal({ isOpen, onClose, onInsert }) {
   if (!isOpen) return null;
 
   return (
-    <div style={styles.overlay} onClick={onClose}>
-      <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+    <div className="modal-backdrop" onClick={onClose} role="dialog" aria-modal="true">
+      <div
+        className="glass-strong modal-content"
+        onClick={(e) => e.stopPropagation()}
+        style={styles.modalBox}
+      >
         <div style={styles.header}>
-          <h2 style={styles.title}>Insert Saved Snippet</h2>
-          <button onClick={onClose} style={styles.closeButton}>
-            ✕
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div className="mac-traffic-lights">
+              <span className="mac-dot mac-dot-close" onClick={onClose} style={{ cursor: 'pointer' }} />
+              <span className="mac-dot mac-dot-min" />
+              <span className="mac-dot mac-dot-max" />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <FileInput size={18} style={{ color: 'var(--primary)' }} />
+              <h3 style={styles.title}>Insert Saved Snippet</h3>
+            </div>
+          </div>
+          <button onClick={onClose} className="btn-ghost" style={{ padding: '6px' }} aria-label="Close modal">
+            <X size={18} />
           </button>
         </div>
 
+        {/* Search */}
         <div style={styles.searchBar}>
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={handleSearch}
-            placeholder="Search snippets by title, tags, or code..."
-            style={styles.searchInput}
-            autoFocus
-          />
+          <div style={styles.searchWrapper}>
+            <Search size={15} style={styles.searchIcon} />
+            <input
+              type="text"
+              className="input-glass"
+              value={searchQuery}
+              onChange={handleSearch}
+              placeholder="Search snippets by title, tag, or code..."
+              style={{ paddingLeft: '36px' }}
+              autoFocus
+            />
+          </div>
         </div>
 
+        {/* Split Browser */}
         <div style={styles.body}>
-          {/* Snippet List Column */}
-          <div style={styles.listColumn}>
-            {isLoading ? (
-              <div style={styles.centerNotice}>Loading snippets...</div>
+          {/* Left: Snippet list */}
+          <div style={styles.snippetList}>
+            {isLoading && snippets.length === 0 ? (
+              <div style={styles.loadingState}>
+                <Loader2 size={18} className="spinner" style={{ animation: 'spin 1s linear infinite' }} />
+                <span>Loading snippets...</span>
+              </div>
             ) : snippets.length === 0 ? (
-              <div style={styles.centerNotice}>No snippets found</div>
+              <div style={styles.emptyState}>No saved snippets found</div>
             ) : (
               snippets.map((s) => {
                 const isSelected = selectedSnippet?._id === s._id;
@@ -72,18 +96,19 @@ export function InsertSnippetModal({ isOpen, onClose, onInsert }) {
                   <div
                     key={s._id}
                     onClick={() => setSelectedSnippet(s)}
+                    className={isSelected ? 'glass' : 'glass-subtle'}
                     style={{
                       ...styles.snippetItem,
-                      ...(isSelected ? styles.snippetItemSelected : {}),
+                      borderColor: isSelected ? 'var(--primary)' : 'var(--glass-border-subtle)',
                     }}
                   >
                     <div style={styles.itemTitle}>{s.title}</div>
                     <div style={styles.itemMeta}>
-                      <span style={styles.langTag}>{s.language}</span>
-                      {s.tags?.length > 0 && (
-                        <span style={styles.tagsPreview}>
-                          {s.tags.slice(0, 2).join(', ')}
-                        </span>
+                      <span className="badge-glass badge-primary" style={{ fontSize: '0.625rem' }}>
+                        {s.language}
+                      </span>
+                      {s.tags && s.tags[0] && (
+                        <span style={styles.tagText}>#{s.tags[0]}</span>
                       )}
                     </div>
                   </div>
@@ -92,39 +117,41 @@ export function InsertSnippetModal({ isOpen, onClose, onInsert }) {
             )}
           </div>
 
-          {/* Snippet Preview Column */}
-          <div style={styles.previewColumn}>
+          {/* Right: Code preview */}
+          <div style={styles.previewPane}>
             {selectedSnippet ? (
-              <div style={styles.previewContainer}>
+              <>
                 <div style={styles.previewHeader}>
-                  <span style={styles.previewTitle}>
-                    {selectedSnippet.title}
-                  </span>
-                  <span style={styles.previewLang}>
-                    {selectedSnippet.language}
-                  </span>
+                  <div style={styles.previewTitle}>{selectedSnippet.title}</div>
+                  <span className="badge-glass">{selectedSnippet.language}</span>
                 </div>
-
                 <pre style={styles.codePreview}>
                   <code>{selectedSnippet.code}</code>
                 </pre>
-
-                <div style={styles.previewActions}>
-                  <button
-                    onClick={() => {
-                      onInsert(selectedSnippet.code);
-                      onClose();
-                    }}
-                    style={styles.insertButton}
-                  >
-                    Insert into Editor
-                  </button>
-                </div>
-              </div>
+              </>
             ) : (
-              <div style={styles.centerNotice}>Select a snippet to preview</div>
+              <div style={styles.emptyPreview}>Select a snippet to preview</div>
             )}
           </div>
+        </div>
+
+        <div style={styles.footer}>
+          <button type="button" onClick={onClose} className="btn btn-secondary">
+            Cancel
+          </button>
+          <button
+            type="button"
+            disabled={!selectedSnippet}
+            onClick={() => {
+              if (selectedSnippet) {
+                onInsert(selectedSnippet.code);
+                onClose();
+              }
+            }}
+            className="btn btn-primary"
+          >
+            Insert at Cursor
+          </button>
         </div>
       </div>
     </div>
@@ -132,182 +159,136 @@ export function InsertSnippetModal({ isOpen, onClose, onInsert }) {
 }
 
 const styles = {
-  overlay: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 1000,
-    backdropFilter: 'blur(3px)',
-  },
-  modal: {
-    backgroundColor: '#1e293b',
-    border: '1px solid #334155',
-    borderRadius: '12px',
-    width: '90%',
-    maxWidth: '750px',
-    height: '520px',
-    display: 'flex',
-    flexDirection: 'column',
-    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)',
-    overflow: 'hidden',
+  modalBox: {
+    width: '100%',
+    maxWidth: '740px',
+    padding: '24px',
   },
   header: {
     display: 'flex',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    padding: '16px 20px',
-    borderBottom: '1px solid #334155',
+    justifyContent: 'space-between',
+    marginBottom: '16px',
+    paddingBottom: '12px',
+    borderBottom: '1px solid var(--glass-border-subtle)',
   },
   title: {
+    fontSize: '1.125rem',
+    fontWeight: '700',
+    color: 'var(--text-primary)',
     margin: 0,
-    fontSize: '18px',
-    fontWeight: '600',
-    color: '#f8fafc',
-  },
-  closeButton: {
-    background: 'none',
-    border: 'none',
-    color: '#94a3b8',
-    fontSize: '18px',
-    cursor: 'pointer',
   },
   searchBar: {
-    padding: '12px 20px',
-    borderBottom: '1px solid #334155',
-    backgroundColor: '#0f172a',
+    marginBottom: '16px',
   },
-  searchInput: {
-    width: '100%',
-    backgroundColor: '#1e293b',
-    border: '1px solid #334155',
-    borderRadius: '6px',
-    padding: '8px 12px',
-    color: '#f8fafc',
-    fontSize: '13px',
-    outline: 'none',
+  searchWrapper: {
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center',
+  },
+  searchIcon: {
+    position: 'absolute',
+    left: '12px',
+    color: 'var(--text-muted)',
+    pointerEvents: 'none',
   },
   body: {
-    flex: 1,
-    display: 'flex',
-    overflow: 'hidden',
+    display: 'grid',
+    gridTemplateColumns: '1fr 1.3fr',
+    gap: '14px',
+    height: '320px',
+    marginBottom: '20px',
   },
-  listColumn: {
-    width: '40%',
-    borderRight: '1px solid #334155',
+  snippetList: {
     overflowY: 'auto',
-    backgroundColor: '#0f172a',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px',
+    paddingRight: '6px',
   },
   snippetItem: {
-    padding: '12px 16px',
-    borderBottom: '1px solid #1e293b',
+    padding: '10px 12px',
+    borderRadius: 'var(--radius-md)',
     cursor: 'pointer',
-    transition: 'background-color 0.15s ease',
-  },
-  snippetItemSelected: {
-    backgroundColor: '#1e293b',
-    borderLeft: '3px solid #38bdf8',
+    transition: 'all var(--transition-fast)',
   },
   itemTitle: {
-    fontSize: '13px',
-    fontWeight: '500',
-    color: '#f8fafc',
+    fontSize: '0.8125rem',
+    fontWeight: '600',
+    color: 'var(--text-primary)',
     marginBottom: '4px',
+    whiteSpace: 'nowrap',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
   },
   itemMeta: {
     display: 'flex',
     alignItems: 'center',
     gap: '6px',
-    fontSize: '11px',
-    color: '#94a3b8',
   },
-  langTag: {
-    backgroundColor: '#0369a133',
-    color: '#38bdf8',
-    padding: '1px 5px',
-    borderRadius: '3px',
-    textTransform: 'lowercase',
+  tagText: {
+    fontSize: '0.6875rem',
+    color: 'var(--text-muted)',
   },
-  tagsPreview: {
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
-  },
-  previewColumn: {
-    flex: 1,
+  previewPane: {
+    borderRadius: 'var(--radius-md)',
+    padding: '12px',
     display: 'flex',
     flexDirection: 'column',
+    backgroundColor: 'var(--editor-bg)',
+    border: '1px solid var(--editor-border)',
     overflow: 'hidden',
-    backgroundColor: '#090d16',
-  },
-  previewContainer: {
-    display: 'flex',
-    flexDirection: 'column',
-    height: '100%',
-    padding: '16px',
   },
   previewHeader: {
     display: 'flex',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: '10px',
   },
   previewTitle: {
-    fontSize: '14px',
+    fontSize: '0.875rem',
     fontWeight: '600',
-    color: '#f8fafc',
-  },
-  previewLang: {
-    fontSize: '11px',
-    color: '#38bdf8',
-    backgroundColor: '#0369a133',
-    padding: '2px 6px',
-    borderRadius: '4px',
+    color: 'var(--text-primary)',
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
   },
   codePreview: {
     flex: 1,
     margin: 0,
-    backgroundColor: '#020617',
-    border: '1px solid #1e293b',
-    borderRadius: '8px',
-    padding: '12px',
-    color: '#cbd5e1',
-    fontSize: '12px',
-    fontFamily: '"SF Mono", Monaco, Menlo, Consolas, monospace',
+    fontFamily: 'var(--font-mono)',
+    fontSize: '0.8125rem',
+    color: 'var(--text-primary)',
     overflow: 'auto',
-    lineHeight: '1.45',
   },
-  previewActions: {
-    display: 'flex',
-    justifyContent: 'flex-end',
-    marginTop: '12px',
-  },
-  insertButton: {
-    padding: '8px 18px',
-    backgroundColor: '#10b981',
-    color: '#ffffff',
-    border: 'none',
-    borderRadius: '6px',
-    fontSize: '13px',
-    fontWeight: '500',
-    cursor: 'pointer',
-  },
-  centerNotice: {
+  emptyPreview: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     height: '100%',
-    color: '#64748b',
-    fontSize: '13px',
-    padding: '20px',
+    color: 'var(--text-muted)',
+    fontSize: '0.8125rem',
+  },
+  loadingState: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '8px',
+    height: '100%',
+    color: 'var(--text-muted)',
+    fontSize: '0.8125rem',
+  },
+  emptyState: {
+    textAlign: 'center',
+    padding: '24px 0',
+    color: 'var(--text-muted)',
+    fontSize: '0.8125rem',
+  },
+  footer: {
+    display: 'flex',
+    justifyContent: 'flex-end',
+    gap: '10px',
+    paddingTop: '16px',
+    borderTop: '1px solid var(--glass-border-subtle)',
   },
 };
-

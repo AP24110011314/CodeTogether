@@ -1,5 +1,19 @@
 import React, { useState } from 'react';
 import { useRoomStore } from '../../store/roomStore.js';
+import {
+  Terminal,
+  FileInput,
+  History,
+  Copy,
+  Check,
+  ChevronDown,
+  ChevronUp,
+  Clock,
+  User,
+  AlertTriangle,
+  Play,
+  Loader2,
+} from 'lucide-react';
 
 export function OutputPanel({ isBottomOpen, setIsBottomOpen, bottomTab, setBottomTab }) {
   const {
@@ -30,67 +44,74 @@ export function OutputPanel({ isBottomOpen, setIsBottomOpen, bottomTab, setBotto
     switch (status) {
       case 'success':
         return {
-          bg: '#14532d',
-          border: '#22c55e',
-          text: '#86efac',
+          bg: 'rgba(34, 197, 94, 0.15)',
+          border: 'rgba(34, 197, 94, 0.35)',
+          text: 'var(--success)',
           label: `✓ Success (Exit ${exitCode ?? 0})`,
         };
       case 'timeout':
         return {
-          bg: '#7c2d12',
-          border: '#ea580c',
-          text: '#fdba74',
+          bg: 'rgba(245, 158, 11, 0.15)',
+          border: 'rgba(245, 158, 11, 0.35)',
+          text: 'var(--accent)',
           label: '⏱ Time Limit Exceeded (5s)',
         };
       case 'memory':
         return {
-          bg: '#7f1d1d',
-          border: '#ef4444',
-          text: '#fca5a5',
+          bg: 'rgba(239, 68, 68, 0.15)',
+          border: 'rgba(239, 68, 68, 0.35)',
+          text: 'var(--danger)',
           label: '🛑 Memory Limit Exceeded (256MB)',
         };
       case 'error':
         return {
-          bg: '#7f1d1d',
-          border: '#ef4444',
-          text: '#fca5a5',
+          bg: 'rgba(239, 68, 68, 0.15)',
+          border: 'rgba(239, 68, 68, 0.35)',
+          text: 'var(--danger)',
           label: `✕ Error (Exit ${exitCode ?? 1})`,
         };
       case 'rejected':
         return {
-          bg: '#78350f',
-          border: '#d97706',
-          text: '#fde68a',
+          bg: 'rgba(245, 158, 11, 0.15)',
+          border: 'rgba(245, 158, 11, 0.35)',
+          text: 'var(--accent)',
           label: '⚠ Run Rejected',
         };
       case 'queued':
         return {
-          bg: '#1e3a8a',
-          border: '#3b82f6',
-          text: '#93c5fd',
+          bg: 'rgba(79, 107, 246, 0.15)',
+          border: 'rgba(79, 107, 246, 0.35)',
+          text: 'var(--primary)',
           label: '⏳ Queued',
         };
       case 'running':
         return {
-          bg: '#854d0e',
-          border: '#eab308',
-          text: '#fef08a',
+          bg: 'rgba(20, 184, 166, 0.15)',
+          border: 'rgba(20, 184, 166, 0.35)',
+          text: 'var(--secondary)',
           label: '⚡ Executing...',
         };
       default:
         return {
-          bg: '#334155',
-          border: '#64748b',
-          text: '#cbd5e1',
+          bg: 'var(--glass-bg-subtle)',
+          border: 'var(--glass-border-subtle)',
+          text: 'var(--text-muted)',
           label: status || 'Unknown',
         };
     }
   };
 
   return (
-    <div style={styles.bottomPanel}>
-      <div style={styles.panelHeader}>
-        <div style={styles.tabGroup}>
+    <div
+      className="glass"
+      style={{
+        ...styles.bottomPanel,
+        height: isBottomOpen ? '250px' : '40px',
+      }}
+    >
+      {/* Header bar */}
+      <div style={styles.bottomHeader}>
+        <div style={styles.headerLeft}>
           <button
             onClick={() => {
               setBottomTab('output');
@@ -101,9 +122,11 @@ export function OutputPanel({ isBottomOpen, setIsBottomOpen, bottomTab, setBotto
               ...(isBottomOpen && bottomTab === 'output' ? styles.activePanelTab : {}),
             }}
           >
-            Output
+            <Terminal size={14} />
+            <span>Output</span>
             {activeRun && <span style={styles.activeDot} />}
           </button>
+
           <button
             onClick={() => {
               setBottomTab('stdin');
@@ -114,8 +137,10 @@ export function OutputPanel({ isBottomOpen, setIsBottomOpen, bottomTab, setBotto
               ...(isBottomOpen && bottomTab === 'stdin' ? styles.activePanelTab : {}),
             }}
           >
-            Stdin {stdin?.trim() ? '•' : ''}
+            <FileInput size={14} />
+            <span>Stdin {stdin?.trim() ? '•' : ''}</span>
           </button>
+
           <button
             onClick={() => {
               setBottomTab('history');
@@ -126,7 +151,8 @@ export function OutputPanel({ isBottomOpen, setIsBottomOpen, bottomTab, setBotto
               ...(isBottomOpen && bottomTab === 'history' ? styles.activePanelTab : {}),
             }}
           >
-            Run History ({runs.length})
+            <History size={14} />
+            <span>History ({runs.length})</span>
           </button>
         </div>
 
@@ -134,18 +160,23 @@ export function OutputPanel({ isBottomOpen, setIsBottomOpen, bottomTab, setBotto
           {isBottomOpen && bottomTab === 'output' && displayRun && (
             <button
               onClick={handleCopyOutput}
-              style={styles.copyButton}
+              className="btn btn-secondary"
+              style={{ padding: '4px 8px', fontSize: '0.75rem', height: '26px' }}
               title="Copy output to clipboard"
             >
-              {copied ? '✓ Copied' : '📋 Copy Output'}
+              {copied ? <Check size={12} style={{ color: 'var(--success)' }} /> : <Copy size={12} />}
+              <span>{copied ? 'Copied' : 'Copy'}</span>
             </button>
           )}
+
           <button
             onClick={() => setIsBottomOpen(!isBottomOpen)}
-            style={styles.collapseButton}
+            className="btn btn-ghost"
+            style={{ padding: '4px 8px', height: '26px', color: 'var(--text-muted)' }}
             title={isBottomOpen ? 'Collapse panel' : 'Expand panel'}
+            aria-label={isBottomOpen ? 'Collapse output panel' : 'Expand output panel'}
           >
-            {isBottomOpen ? '▼' : '▲'}
+            {isBottomOpen ? <ChevronDown size={15} /> : <ChevronUp size={15} />}
           </button>
         </div>
       </div>
@@ -158,43 +189,37 @@ export function OutputPanel({ isBottomOpen, setIsBottomOpen, bottomTab, setBotto
               {/* Active in-flight run indicator */}
               {activeRun && (
                 <div style={styles.activeRunBanner}>
-                  <div style={styles.spinner} />
-                  <div>
-                    <span style={{ fontWeight: 600 }}>
-                      {activeRun.status === 'queued'
-                        ? `Queued in runner queue (position ${activeRun.position || 1})...`
-                        : 'Executing in isolated child process...'}
-                    </span>
-                    {activeRun.by && (
-                      <span style={{ marginLeft: '10px', color: '#94a3b8', fontSize: '12px' }}>
-                        Triggered by {activeRun.by.name}
-                      </span>
-                    )}
-                  </div>
+                  <Loader2 size={15} className="spinner" style={{ animation: 'spin 1s linear infinite' }} />
+                  <span>
+                    {activeRun.status === 'queued'
+                      ? `Execution request queued (position ${activeRun.position || 1})...`
+                      : 'Executing code in isolated child-process sandbox...'}
+                  </span>
                 </div>
               )}
 
-              {/* Run rejection / error banner */}
               {runError && (
-                <div style={styles.errorBanner}>
-                  <span>⚠ Execution Rejected: {runError.message || runError.reason}</span>
+                <div style={styles.errorAlert}>
+                  <AlertTriangle size={15} style={{ color: 'var(--danger)', flexShrink: 0 }} />
+                  <span>{runError}</span>
                 </div>
               )}
 
-              {/* Result metadata bar */}
               {displayRun ? (
-                <div>
-                  <div style={styles.metadataBar}>
+                <div style={styles.resultBox}>
+                  {/* Meta Bar */}
+                  <div style={styles.resultMeta}>
                     <div style={styles.metaLeft}>
                       {(() => {
                         const badge = getStatusBadge(displayRun.status, displayRun.exitCode);
                         return (
                           <span
+                            className="badge-glass"
                             style={{
-                              ...styles.badge,
                               backgroundColor: badge.bg,
                               borderColor: badge.border,
                               color: badge.text,
+                              fontWeight: '600',
                             }}
                           >
                             {badge.label}
@@ -202,27 +227,24 @@ export function OutputPanel({ isBottomOpen, setIsBottomOpen, bottomTab, setBotto
                         );
                       })()}
                       <span style={styles.metaItem}>
-                        ⏱ {displayRun.durationMs !== undefined ? `${displayRun.durationMs}ms` : '-'}
+                        <Clock size={12} />
+                        <span>{displayRun.durationMs !== undefined ? `${displayRun.durationMs}ms` : '-'}</span>
                       </span>
                       {displayRun.language && (
-                        <span style={styles.metaItem}>
-                          🔤 {displayRun.language}
+                        <span className="badge-glass" style={{ textTransform: 'capitalize' }}>
+                          {displayRun.language}
                         </span>
                       )}
-                      {displayRun.by || displayRun.user ? (
+                      {(displayRun.by || displayRun.user) && (
                         <span style={styles.metaItem}>
-                          👤 {displayRun.by?.name || displayRun.user?.name || 'User'}
-                        </span>
-                      ) : null}
-                      {displayRun.createdAt && (
-                        <span style={styles.metaItem}>
-                          🕒 {new Date(displayRun.createdAt).toLocaleTimeString()}
+                          <User size={12} />
+                          <span>{displayRun.by?.name || displayRun.user?.name || 'User'}</span>
                         </span>
                       )}
                     </div>
 
                     {displayRun.truncated && (
-                      <div style={styles.truncatedNotice}>
+                      <div className="badge-glass badge-accent">
                         ⚠ Output capped at 64 KB limit
                       </div>
                     )}
@@ -246,15 +268,15 @@ export function OutputPanel({ isBottomOpen, setIsBottomOpen, bottomTab, setBotto
 
                     {!displayRun.stdout && !displayRun.stderr && (
                       <div style={styles.emptyNotice}>
-                        (Program finished with no output)
+                        (Program finished with exit code {displayRun.exitCode ?? 0} and no output)
                       </div>
                     )}
                   </div>
                 </div>
               ) : !activeRun ? (
                 <div style={styles.outputBox}>
-                  <span style={{ color: '#64748b' }}>
-                    Ready. Click "▶ Run" in the toolbar or press{' '}
+                  <span style={{ color: 'var(--text-muted)' }}>
+                    Ready. Click <strong>"Run"</strong> or press{' '}
                     <kbd style={styles.kbd}>Cmd/Ctrl + Enter</kbd> to execute your code.
                   </span>
                 </div>
@@ -265,22 +287,15 @@ export function OutputPanel({ isBottomOpen, setIsBottomOpen, bottomTab, setBotto
           {/* TAB 2: STDIN */}
           {bottomTab === 'stdin' && (
             <div style={styles.stdinContainer}>
-              <div style={styles.stdinHeader}>
-                <span style={{ fontSize: '12px', color: '#94a3b8' }}>
-                  Standard input supplied to the process before execution (max 10 KB):
-                </span>
-                {stdin && (
-                  <button onClick={() => setStdin('')} style={styles.clearStdinBtn}>
-                    Clear Stdin
-                  </button>
-                )}
+              <div style={styles.stdinHint}>
+                Standard input fed to your program during execution (one value per line):
               </div>
               <textarea
                 value={stdin}
                 onChange={(e) => setStdin(e.target.value)}
-                placeholder="Type or paste input for your program here (e.g. arguments, test cases)..."
+                placeholder="e.g.&#10;5&#10;10 20 30 40 50"
+                className="input-glass"
                 style={styles.stdinTextarea}
-                maxLength={10240}
               />
             </div>
           )}
@@ -289,50 +304,42 @@ export function OutputPanel({ isBottomOpen, setIsBottomOpen, bottomTab, setBotto
           {bottomTab === 'history' && (
             <div style={styles.historyContainer}>
               {runs.length === 0 ? (
-                <div style={styles.emptyHistory}>
-                  <span style={{ color: '#64748b' }}>No execution runs recorded yet in this room.</span>
-                </div>
+                <div style={styles.emptyHistory}>No execution runs recorded in this room yet.</div>
               ) : (
                 <div style={styles.historyList}>
-                  {runs.map((r, idx) => {
+                  {runs.map((r, i) => {
+                    const isSelected = displayRun?.id === r.id || displayRun?._id === r._id;
                     const badge = getStatusBadge(r.status, r.exitCode);
-                    const isSelected = displayRun && (displayRun.id === r.id || displayRun.runId === r.id);
+
                     return (
                       <div
-                        key={r.id || idx}
-                        onClick={() => {
-                          setSelectedRun(r);
-                          setLatestRunResult(r);
-                          setBottomTab('output');
-                        }}
+                        key={r.id || r._id || i}
+                        onClick={() => setSelectedRun(r)}
+                        className={isSelected ? 'glass' : 'glass-subtle'}
                         style={{
                           ...styles.historyItem,
-                          ...(isSelected ? styles.historyItemSelected : {}),
+                          borderColor: isSelected ? 'var(--primary)' : 'var(--glass-border-subtle)',
                         }}
                       >
-                        <div style={styles.historyItemLeft}>
+                        <div style={styles.historyItemTop}>
                           <span
+                            className="badge-glass"
                             style={{
-                              ...styles.smallBadge,
                               backgroundColor: badge.bg,
                               borderColor: badge.border,
                               color: badge.text,
                             }}
                           >
-                            {r.status}
-                          </span>
-                          <span style={styles.historyLang}>{r.language}</span>
-                          <span style={styles.historyUser}>
-                            by {r.by?.name || r.user?.name || 'User'}
-                          </span>
-                        </div>
-                        <div style={styles.historyItemRight}>
-                          <span style={styles.historyDuration}>
-                            {r.durationMs !== undefined ? `${r.durationMs}ms` : ''}
+                            {badge.label}
                           </span>
                           <span style={styles.historyTime}>
-                            {r.createdAt ? new Date(r.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : ''}
+                            {new Date(r.createdAt).toLocaleTimeString()}
                           </span>
+                        </div>
+                        <div style={styles.historyItemMeta}>
+                          <span>⏱ {r.durationMs || 0}ms</span>
+                          <span>🔤 {r.language}</span>
+                          <span>👤 {r.by?.name || r.user?.name || 'User'}</span>
                         </div>
                       </div>
                     );
@@ -351,291 +358,251 @@ const styles = {
   bottomPanel: {
     display: 'flex',
     flexDirection: 'column',
-    backgroundColor: '#0f172a',
-    borderTop: '1px solid #334155',
-    maxHeight: '340px',
+    borderTop: '1px solid var(--glass-border)',
+    borderRadius: 0,
+    borderLeft: 'none',
+    borderRight: 'none',
+    borderBottom: 'none',
+    transition: 'height var(--transition-normal)',
+    overflow: 'hidden',
+    zIndex: 15,
   },
-  panelHeader: {
+  bottomHeader: {
+    height: '40px',
     display: 'flex',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#1e293b',
-    borderBottom: '1px solid #334155',
-    padding: '0 12px',
-    height: '36px',
-    userSelect: 'none',
+    justifyContent: 'space-between',
+    padding: '0 14px',
+    borderBottom: '1px solid var(--glass-border-subtle)',
+    flexShrink: 0,
   },
-  tabGroup: {
+  headerLeft: {
     display: 'flex',
+    alignItems: 'center',
     gap: '4px',
-    height: '100%',
   },
   panelTab: {
-    display: 'flex',
+    display: 'inline-flex',
     alignItems: 'center',
     gap: '6px',
-    backgroundColor: 'transparent',
-    color: '#94a3b8',
+    padding: '5px 10px',
+    background: 'transparent',
     border: 'none',
-    borderBottom: '2px solid transparent',
-    padding: '0 14px',
-    fontSize: '12px',
-    fontWeight: 600,
+    color: 'var(--text-secondary)',
+    fontSize: '0.75rem',
+    fontWeight: '500',
     cursor: 'pointer',
-    transition: 'all 0.15s ease',
+    borderRadius: 'var(--radius-sm)',
+    position: 'relative',
+    transition: 'all var(--transition-fast)',
   },
   activePanelTab: {
-    color: '#38bdf8',
-    borderBottom: '2px solid #38bdf8',
-    backgroundColor: '#0f172a',
+    background: 'var(--glass-bg-strong)',
+    color: 'var(--primary)',
+    fontWeight: '600',
+    boxShadow: 'var(--glass-shadow)',
   },
   activeDot: {
     width: '6px',
     height: '6px',
     borderRadius: '50%',
-    backgroundColor: '#eab308',
-    display: 'inline-block',
+    backgroundColor: 'var(--secondary)',
+    animation: 'pulse 1.5s infinite',
   },
   headerRight: {
     display: 'flex',
     alignItems: 'center',
     gap: '8px',
   },
-  copyButton: {
-    backgroundColor: '#334155',
-    color: '#cbd5e1',
-    border: 'none',
-    borderRadius: '4px',
-    padding: '3px 8px',
-    fontSize: '11px',
-    cursor: 'pointer',
-  },
-  collapseButton: {
-    backgroundColor: 'transparent',
-    border: 'none',
-    color: '#94a3b8',
-    cursor: 'pointer',
-    fontSize: '11px',
-    padding: '4px',
-  },
   bottomContent: {
-    height: '240px',
+    flex: 1,
     overflowY: 'auto',
-    backgroundColor: '#090d16',
     display: 'flex',
     flexDirection: 'column',
   },
   outputContainer: {
+    flex: 1,
+    padding: '12px 16px',
     display: 'flex',
     flexDirection: 'column',
-    height: '100%',
+    overflowY: 'auto',
   },
   activeRunBanner: {
     display: 'flex',
     alignItems: 'center',
-    gap: '10px',
-    padding: '8px 14px',
-    backgroundColor: '#1e3a8a',
-    color: '#93c5fd',
-    fontSize: '12px',
-    borderBottom: '1px solid #2563eb',
+    gap: '8px',
+    backgroundColor: 'rgba(var(--primary-rgb), 0.1)',
+    color: 'var(--primary)',
+    padding: '8px 12px',
+    borderRadius: 'var(--radius-md)',
+    fontSize: '0.75rem',
+    fontWeight: '500',
+    marginBottom: '10px',
+    border: '1px solid rgba(var(--primary-rgb), 0.25)',
   },
-  spinner: {
-    width: '12px',
-    height: '12px',
-    border: '2px solid #93c5fd',
-    borderTopColor: 'transparent',
-    borderRadius: '50%',
-    animation: 'spin 0.8s linear infinite',
-  },
-  errorBanner: {
-    padding: '8px 14px',
-    backgroundColor: '#78350f',
-    color: '#fef08a',
-    fontSize: '12px',
-    borderBottom: '1px solid #b45309',
-  },
-  metadataBar: {
+  errorAlert: {
     display: 'flex',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    padding: '6px 14px',
-    backgroundColor: '#111827',
-    borderBottom: '1px solid #1f2937',
-    fontSize: '12px',
+    gap: '8px',
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    color: 'var(--danger)',
+    padding: '8px 12px',
+    borderRadius: 'var(--radius-md)',
+    fontSize: '0.75rem',
+    marginBottom: '10px',
+  },
+  resultBox: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px',
+  },
+  resultMeta: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: '8px',
+    borderBottom: '1px solid var(--glass-border-subtle)',
+    flexWrap: 'wrap',
+    gap: '8px',
   },
   metaLeft: {
     display: 'flex',
     alignItems: 'center',
-    gap: '12px',
-  },
-  badge: {
-    padding: '2px 8px',
-    borderRadius: '4px',
-    fontSize: '11px',
-    fontWeight: 600,
-    border: '1px solid transparent',
-  },
-  smallBadge: {
-    padding: '1px 6px',
-    borderRadius: '4px',
-    fontSize: '10px',
-    fontWeight: 600,
-    border: '1px solid transparent',
-    textTransform: 'uppercase',
+    gap: '10px',
+    flexWrap: 'wrap',
   },
   metaItem: {
-    color: '#94a3b8',
-    fontSize: '11px',
-  },
-  truncatedNotice: {
-    color: '#f59e0b',
-    fontSize: '11px',
-    fontWeight: 500,
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '4px',
+    fontSize: '0.75rem',
+    color: 'var(--text-secondary)',
   },
   consoleBody: {
-    padding: '10px 14px',
-    overflowY: 'auto',
-    flex: 1,
-    fontFamily: 'monospace',
-    fontSize: '12px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '10px',
+    paddingTop: '6px',
   },
   stdoutBlock: {
-    marginBottom: '8px',
+    borderRadius: 'var(--radius-sm)',
+    padding: '10px',
+    backgroundColor: 'var(--editor-bg)',
+    border: '1px solid var(--editor-border)',
   },
   blockTitle: {
-    fontSize: '10px',
-    color: '#64748b',
-    fontWeight: 600,
-    marginBottom: '2px',
-    letterSpacing: '0.05em',
+    fontSize: '0.6875rem',
+    fontWeight: '600',
+    color: 'var(--success)',
+    marginBottom: '4px',
+    fontFamily: 'var(--font-mono)',
   },
   codeText: {
     margin: 0,
+    fontFamily: 'var(--font-mono)',
+    fontSize: '0.8125rem',
+    color: 'var(--text-primary)',
     whiteSpace: 'pre-wrap',
     wordBreak: 'break-word',
-    color: '#e2e8f0',
-    lineHeight: 1.5,
   },
   stderrBlock: {
-    marginTop: '6px',
-    padding: '8px 10px',
-    backgroundColor: '#260a0a',
-    border: '1px solid #7f1d1d',
-    borderRadius: '4px',
+    borderRadius: 'var(--radius-sm)',
+    padding: '10px',
+    backgroundColor: 'rgba(239, 68, 68, 0.05)',
+    border: '1px solid rgba(239, 68, 68, 0.2)',
   },
   stderrTitle: {
-    fontSize: '10px',
-    color: '#f87171',
-    fontWeight: 600,
-    marginBottom: '2px',
-    letterSpacing: '0.05em',
+    fontSize: '0.6875rem',
+    fontWeight: '600',
+    color: 'var(--danger)',
+    marginBottom: '4px',
+    fontFamily: 'var(--font-mono)',
   },
   stderrText: {
     margin: 0,
+    fontFamily: 'var(--font-mono)',
+    fontSize: '0.8125rem',
+    color: 'var(--danger)',
     whiteSpace: 'pre-wrap',
     wordBreak: 'break-word',
-    color: '#fca5a5',
-    lineHeight: 1.5,
   },
   emptyNotice: {
-    color: '#64748b',
+    fontSize: '0.75rem',
+    color: 'var(--text-muted)',
     fontStyle: 'italic',
-    padding: '8px 0',
+    padding: '6px 0',
   },
   outputBox: {
-    padding: '16px',
-    fontSize: '13px',
+    padding: '24px 0',
+    textAlign: 'center',
+    fontSize: '0.8125rem',
   },
   kbd: {
-    backgroundColor: '#1e293b',
-    border: '1px solid #334155',
-    borderRadius: '3px',
-    padding: '2px 5px',
-    color: '#94a3b8',
-    fontSize: '11px',
+    padding: '2px 6px',
+    borderRadius: '4px',
+    backgroundColor: 'var(--glass-bg-subtle)',
+    border: '1px solid var(--glass-border)',
+    fontSize: '0.75rem',
+    fontFamily: 'var(--font-mono)',
+    color: 'var(--text-primary)',
   },
   stdinContainer: {
+    flex: 1,
+    padding: '12px 16px',
     display: 'flex',
     flexDirection: 'column',
-    height: '100%',
-    padding: '10px 14px',
+    gap: '8px',
   },
-  stdinHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '6px',
-  },
-  clearStdinBtn: {
-    backgroundColor: 'transparent',
-    border: 'none',
-    color: '#f87171',
-    fontSize: '11px',
-    cursor: 'pointer',
+  stdinHint: {
+    fontSize: '0.75rem',
+    color: 'var(--text-muted)',
   },
   stdinTextarea: {
     flex: 1,
-    backgroundColor: '#020617',
-    color: '#e2e8f0',
-    border: '1px solid #334155',
-    borderRadius: '4px',
-    padding: '10px',
-    fontFamily: 'monospace',
-    fontSize: '12px',
+    fontFamily: 'var(--font-mono)',
+    fontSize: '0.8125rem',
     resize: 'none',
-    outline: 'none',
+    minHeight: '110px',
   },
   historyContainer: {
-    height: '100%',
+    flex: 1,
+    padding: '12px 16px',
     overflowY: 'auto',
   },
   emptyHistory: {
-    padding: '16px',
-    fontSize: '13px',
+    textAlign: 'center',
+    padding: '24px 0',
+    color: 'var(--text-muted)',
+    fontSize: '0.8125rem',
   },
   historyList: {
     display: 'flex',
     flexDirection: 'column',
+    gap: '8px',
   },
   historyItem: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '8px 14px',
-    borderBottom: '1px solid #1e293b',
+    padding: '10px 14px',
+    borderRadius: 'var(--radius-md)',
     cursor: 'pointer',
-    transition: 'background 0.15s ease',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '6px',
+    transition: 'all var(--transition-fast)',
   },
-  historyItemSelected: {
-    backgroundColor: '#1e293b',
-  },
-  historyItemLeft: {
+  historyItemTop: {
     display: 'flex',
     alignItems: 'center',
-    gap: '10px',
+    justifyContent: 'space-between',
   },
-  historyLang: {
-    fontSize: '12px',
-    fontWeight: 600,
-    color: '#cbd5e1',
+  historyTime: {
+    fontSize: '0.6875rem',
+    color: 'var(--text-muted)',
   },
-  historyUser: {
-    fontSize: '11px',
-    color: '#64748b',
-  },
-  historyItemRight: {
+  historyItemMeta: {
     display: 'flex',
     alignItems: 'center',
     gap: '12px',
-  },
-  historyDuration: {
-    fontSize: '11px',
-    color: '#94a3b8',
-  },
-  historyTime: {
-    fontSize: '11px',
-    color: '#64748b',
+    fontSize: '0.75rem',
+    color: 'var(--text-secondary)',
   },
 };
-

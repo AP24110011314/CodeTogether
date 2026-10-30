@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useRoomStore } from '../../store/roomStore.js';
 import { regenerateInviteApi } from '../../api/rooms.js';
+import { Share2, Copy, Check, RotateCcw, X, Lock, Eye, Edit3 } from 'lucide-react';
 
 export function ShareModal({ isOpen, onClose }) {
   const { room, role, setRoom } = useRoomStore();
@@ -41,69 +42,103 @@ export function ShareModal({ isOpen, onClose }) {
   };
 
   return (
-    <div style={styles.overlay} onClick={onClose}>
-      <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+    <div className="modal-backdrop" onClick={onClose} role="dialog" aria-modal="true">
+      <div
+        className="glass-strong modal-content"
+        onClick={(e) => e.stopPropagation()}
+        style={styles.modalBox}
+      >
         <div style={styles.header}>
-          <h2 style={styles.title}>Share Room</h2>
-          <button onClick={onClose} style={styles.closeButton}>
-            ✕
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div className="mac-traffic-lights">
+              <span className="mac-dot mac-dot-close" onClick={onClose} style={{ cursor: 'pointer' }} />
+              <span className="mac-dot mac-dot-min" />
+              <span className="mac-dot mac-dot-max" />
+            </div>
+            <h3 style={styles.title}>Share Collaborative Workspace</h3>
+          </div>
+          <button onClick={onClose} className="btn-ghost" style={{ padding: '6px' }} aria-label="Close modal">
+            <X size={18} />
           </button>
         </div>
 
         <p style={styles.subtitle}>
-          Invite collaborators to <strong>{room.name}</strong> ({room.visibility.toUpperCase()}).
+          Invite students or team members to <strong>{room.name}</strong> ({room.visibility.toUpperCase()}).
         </p>
 
+        {/* Editor Link */}
         <div style={styles.linkSection}>
-          <label style={styles.label}>
-            {isPrivate ? 'Editor Invite Link (Edit & Execute)' : 'Public Room Link (Editor Role)'}
-          </label>
+          <div style={styles.labelRow}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Edit3 size={14} style={{ color: 'var(--primary)' }} />
+              <label style={styles.label}>
+                {isPrivate ? 'Editor Invite Link' : 'Public Room Link (Editor Role)'}
+              </label>
+            </div>
+            <span style={styles.roleHint}>Can edit code, chat & run</span>
+          </div>
           <div style={styles.inputRow}>
             <input
               type="text"
               readOnly
               value={editorLink}
-              style={styles.linkInput}
+              className="input-glass"
+              style={styles.input}
             />
             <button
               onClick={() => copyToClipboard(editorLink, 'editor')}
-              style={styles.copyButton}
+              className="btn btn-primary"
+              style={styles.copyBtn}
             >
-              {copiedLink === 'editor' ? 'Copied!' : 'Copy'}
+              {copiedLink === 'editor' ? <Check size={14} /> : <Copy size={14} />}
+              <span>{copiedLink === 'editor' ? 'Copied' : 'Copy'}</span>
             </button>
           </div>
         </div>
 
+        {/* Viewer Link */}
         <div style={styles.linkSection}>
-          <label style={styles.label}>Read-Only Share Link (Viewer Role)</label>
+          <div style={styles.labelRow}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Eye size={14} style={{ color: 'var(--secondary)' }} />
+              <label style={styles.label}>Read-Only Viewer Link</label>
+            </div>
+            <span style={styles.roleHint}>Observation mode</span>
+          </div>
           <div style={styles.inputRow}>
             <input
               type="text"
               readOnly
               value={viewerLink}
-              style={styles.linkInput}
+              className="input-glass"
+              style={styles.input}
             />
             <button
               onClick={() => copyToClipboard(viewerLink, 'viewer')}
-              style={styles.copyButton}
+              className="btn btn-secondary"
+              style={styles.copyBtn}
             >
-              {copiedLink === 'viewer' ? 'Copied!' : 'Copy'}
+              {copiedLink === 'viewer' ? <Check size={14} style={{ color: 'var(--success)' }} /> : <Copy size={14} />}
+              <span>{copiedLink === 'viewer' ? 'Copied' : 'Copy'}</span>
             </button>
           </div>
-          <span style={styles.hint}>
-            Recipients using this link will have read-only access and cannot edit or run code.
-          </span>
         </div>
 
+        {/* Owner Regenerate Action */}
         {isOwner && (
-          <div style={styles.ownerActions}>
+          <div style={styles.regenerateSection}>
             <button
               onClick={handleRegenerate}
               disabled={isRegenerating}
-              style={styles.regenButton}
+              className="btn btn-secondary"
+              style={styles.regenerateBtn}
             >
-              {isRegenerating ? 'Regenerating...' : 'Regenerate Invite Links'}
+              <RotateCcw size={14} />
+              <span>{isRegenerating ? 'Regenerating Tokens...' : 'Regenerate Secret Tokens'}</span>
             </button>
+            <p style={styles.regenDesc}>
+              Invalidates prior invite tokens. Useful if a link was shared unintendedly.
+            </p>
           </div>
         )}
       </div>
@@ -112,108 +147,77 @@ export function ShareModal({ isOpen, onClose }) {
 }
 
 const styles = {
-  overlay: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 1000,
-    backdropFilter: 'blur(2px)',
-  },
-  modal: {
+  modalBox: {
     width: '100%',
-    maxWidth: '520px',
-    backgroundColor: '#1e293b',
-    borderRadius: '12px',
-    border: '1px solid #334155',
+    maxWidth: '540px',
     padding: '24px',
-    color: '#f8fafc',
-    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)',
   },
   header: {
     display: 'flex',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: '8px',
+    justifyContent: 'space-between',
+    marginBottom: '14px',
+    paddingBottom: '12px',
+    borderBottom: '1px solid var(--glass-border-subtle)',
   },
   title: {
-    fontSize: '20px',
+    fontSize: '1.125rem',
     fontWeight: '700',
+    color: 'var(--text-primary)',
     margin: 0,
   },
-  closeButton: {
-    background: 'none',
-    border: 'none',
-    color: '#94a3b8',
-    fontSize: '18px',
-    cursor: 'pointer',
-  },
   subtitle: {
-    fontSize: '14px',
-    color: '#94a3b8',
+    fontSize: '0.875rem',
+    color: 'var(--text-secondary)',
     marginBottom: '20px',
+    lineHeight: '1.4',
   },
   linkSection: {
+    marginBottom: '18px',
+  },
+  labelRow: {
     display: 'flex',
-    flexDirection: 'column',
-    gap: '6px',
-    marginBottom: '16px',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: '6px',
   },
   label: {
-    fontSize: '13px',
+    fontSize: '0.8125rem',
     fontWeight: '600',
-    color: '#cbd5e1',
+    color: 'var(--text-primary)',
+  },
+  roleHint: {
+    fontSize: '0.6875rem',
+    color: 'var(--text-muted)',
   },
   inputRow: {
     display: 'flex',
     gap: '8px',
   },
-  linkInput: {
+  input: {
     flex: 1,
-    padding: '9px 12px',
-    backgroundColor: '#0f172a',
-    border: '1px solid #475569',
-    borderRadius: '6px',
-    color: '#94a3b8',
-    fontSize: '13px',
-    outline: 'none',
+    fontFamily: 'var(--font-mono)',
+    fontSize: '0.75rem',
   },
-  copyButton: {
-    padding: '9px 16px',
-    backgroundColor: '#0284c7',
-    color: '#ffffff',
-    border: 'none',
-    borderRadius: '6px',
-    fontSize: '13px',
-    fontWeight: '600',
-    cursor: 'pointer',
-    whiteSpace: 'nowrap',
-  },
-  hint: {
-    fontSize: '12px',
-    color: '#64748b',
-  },
-  ownerActions: {
-    marginTop: '20px',
-    paddingTop: '16px',
-    borderTop: '1px solid #334155',
-    display: 'flex',
-    justifyContent: 'flex-end',
-  },
-  regenButton: {
+  copyBtn: {
     padding: '8px 14px',
-    backgroundColor: '#334155',
-    color: '#f87171',
-    border: '1px solid #475569',
-    borderRadius: '6px',
-    fontSize: '12px',
-    fontWeight: '500',
-    cursor: 'pointer',
+    fontSize: '0.8125rem',
+    flexShrink: 0,
+    gap: '6px',
+  },
+  regenerateSection: {
+    marginTop: '22px',
+    paddingTop: '16px',
+    borderTop: '1px solid var(--glass-border-subtle)',
+  },
+  regenerateBtn: {
+    padding: '8px 14px',
+    fontSize: '0.8125rem',
+    gap: '6px',
+  },
+  regenDesc: {
+    fontSize: '0.6875rem',
+    color: 'var(--text-muted)',
+    marginTop: '6px',
   },
 };
-

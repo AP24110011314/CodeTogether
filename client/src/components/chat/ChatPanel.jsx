@@ -3,6 +3,7 @@ import { useRoomStore } from '../../store/roomStore.js';
 import { useAuthStore } from '../../store/authStore.js';
 import { getSocket } from '../../lib/socket.js';
 import { getRoomMessagesApi } from '../../api/messages.js';
+import { Send, MessageSquare, AlertCircle, Loader2 } from 'lucide-react';
 
 export function ChatPanel() {
   const { room, messages, prependMessages, hasMoreMessages, setHasMoreMessages } =
@@ -28,13 +29,11 @@ export function ChatPanel() {
     const el = listContainerRef.current;
     if (!el) return;
 
-    // Check if user is near bottom (within 100px)
     const threshold = 100;
     const isNearBottom =
       el.scrollHeight - el.scrollTop - el.clientHeight <= threshold;
     isNearBottomRef.current = isNearBottom;
 
-    // If scrolled to top and more history available, load older messages
     if (el.scrollTop === 0 && hasMoreMessages && !isLoadingMore && room?.id && messages.length > 0) {
       setIsLoadingMore(true);
       const oldestMessage = messages[0];
@@ -47,12 +46,10 @@ export function ChatPanel() {
         });
 
         if (data.messages && data.messages.length > 0) {
-          // data.messages is returned newest-first from the API query, so reverse it
           const chronologicalOlder = [...data.messages].reverse();
           prependMessages(chronologicalOlder);
           setHasMoreMessages(data.hasMore);
 
-          // Restore scroll position after DOM update
           requestAnimationFrame(() => {
             if (el) {
               el.scrollTop = el.scrollHeight - previousScrollHeight;
@@ -80,16 +77,23 @@ export function ChatPanel() {
       return;
     }
 
-    // Always keep focus on bottom after sending own message
-    isNearBottomRef.current = true;
-
-    socket.emit('chat:send', { roomId: room.id, text }, (ack) => {
-      if (ack && !ack.ok) {
-        setErrorMessage(ack.error?.message || 'Failed to send message');
+    socket.emit(
+      'chat:send',
+      {
+        roomId: room.id,
+        text,
+      },
+      (ack) => {
+        if (!ack?.ok) {
+          setErrorMessage(ack?.error?.message || 'Failed to send message');
+        } else {
+          setInputText('');
+          if (messagesEndRef.current) {
+            messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+          }
+        }
       }
-    });
-
-    setInputText('');
+    );
   };
 
   const handleKeyDown = (e) => {
@@ -101,12 +105,8 @@ export function ChatPanel() {
 
   const formatTime = (isoString) => {
     if (!isoString) return '';
-    try {
-      const d = new Date(isoString);
-      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    } catch {
-      return '';
-    }
+    const date = new Date(isoString);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
   return (
@@ -118,15 +118,20 @@ export function ChatPanel() {
         style={styles.messagesList}
       >
         {isLoadingMore && (
-          <div style={styles.loadingBanner}>Loading older messages...</div>
+          <div style={styles.loadingBanner}>
+            <Loader2 size={13} className="spinner" style={{ animation: 'spin 1s linear infinite' }} />
+            <span>Loading older messages...</span>
+          </div>
         )}
 
         {messages.length === 0 ? (
           <div style={styles.emptyContainer}>
-            <div style={styles.emptyIcon}>💬</div>
-            <p style={styles.emptyTitle}>No messages yet</p>
+            <div style={styles.emptyIconBox}>
+              <MessageSquare size={24} style={{ color: 'var(--primary)' }} />
+            </div>
+            <p style={styles.emptyTitle}>Workspace Chat</p>
             <p style={styles.emptySubtitle}>
-              Say hello or collaborate with room participants!
+              Say hello or collaborate with room participants in real time.
             </p>
           </div>
         ) : (
@@ -135,7 +140,7 @@ export function ChatPanel() {
               return (
                 <div key={msg.id || msg.createdAt} style={styles.systemMessage}>
                   <span style={styles.systemDot}>•</span>
-                  <span style={styles.systemText}>{msg.text}</span>
+                  <span>{msg.text}</span>
                   <span style={styles.systemTime}>{formatTime(msg.createdAt)}</span>
                 </div>
               );
@@ -148,53 +153,40 @@ export function ChatPanel() {
                 key={msg.id}
                 style={{
                   ...styles.messageRow,
-                  ...(isYou ? styles.messageRowYou : {}),
+                  justifyContent: isYou ? 'flex-end' : 'flex-start',
                 }}
               >
                 {!isYou && (
                   <div
                     style={{
                       ...styles.avatar,
-                      backgroundColor: msg.color || '#38bdf8',
+                      backgroundColor: msg.color || 'var(--primary)',
                     }}
                   >
-                    {msg.name ? msg.name[0].toUpperCase() : 'U'}
+                    {msg.userName ? msg.userName[0].toUpperCase() : 'U'}
                   </div>
                 )}
 
                 <div
                   style={{
-                    ...styles.bubbleContainer,
-                    ...(isYou ? styles.bubbleContainerYou : {}),
+                    ...styles.messageContent,
+                    alignItems: isYou ? 'flex-end' : 'flex-start',
                   }}
                 >
                   <div style={styles.metaRow}>
-                    <span style={styles.senderName}>
-                      {isYou ? 'You' : msg.name}
-                    </span>
-                    <span style={styles.timestamp}>{formatTime(msg.createdAt)}</span>
+                    <span style={styles.senderName}>{isYou ? 'You' : msg.userName}</span>
+                    <span style={styles.messageTime}>{formatTime(msg.createdAt)}</span>
                   </div>
 
                   <div
                     style={{
                       ...styles.bubble,
-                      ...(isYou ? styles.bubbleYou : styles.bubbleOther),
+                      ...(isYou ? styles.bubbleYou : styles.bubbleThem),
                     }}
                   >
                     {msg.text}
                   </div>
                 </div>
-
-                {isYou && (
-                  <div
-                    style={{
-                      ...styles.avatar,
-                      backgroundColor: msg.color || currentUser?.avatarColor || '#38bdf8',
-                    }}
-                  >
-                    {msg.name ? msg.name[0].toUpperCase() : 'U'}
-                  </div>
-                )}
               </div>
             );
           })
@@ -202,54 +194,37 @@ export function ChatPanel() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Error or Rate Limit Notice */}
-      {errorMessage && (
-        <div style={styles.errorAlert}>
-          <span>⚠️ {errorMessage}</span>
-          <button
-            onClick={() => setErrorMessage(null)}
-            style={styles.dismissError}
-          >
-            ✕
-          </button>
-        </div>
-      )}
-
-      {/* Chat Input Bar */}
+      {/* Input Area */}
       <div style={styles.inputArea}>
-        <div style={styles.inputWrapper}>
+        {errorMessage && (
+          <div role="alert" style={styles.errorAlert}>
+            <AlertCircle size={14} style={{ flexShrink: 0 }} />
+            <span>{errorMessage}</span>
+          </div>
+        )}
+
+        <div style={styles.inputRow}>
           <textarea
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Type a message... (Enter to send, Shift+Enter for newline)"
-            rows={2}
+            placeholder="Type a message (Enter to send)..."
+            rows={1}
             maxLength={2000}
+            className="input-glass"
             style={styles.textarea}
           />
-          {inputText.length > 1500 && (
-            <span
-              style={{
-                ...styles.charCount,
-                color: inputText.length > 1900 ? '#ef4444' : '#94a3b8',
-              }}
-            >
-              {2000 - inputText.length}
-            </span>
-          )}
+          <button
+            onClick={handleSendMessage}
+            disabled={!inputText.trim()}
+            className="btn btn-primary"
+            style={styles.sendButton}
+            title="Send Message"
+            aria-label="Send message"
+          >
+            <Send size={15} />
+          </button>
         </div>
-
-        <button
-          onClick={handleSendMessage}
-          disabled={!inputText.trim()}
-          style={{
-            ...styles.sendButton,
-            ...(!inputText.trim() ? styles.sendButtonDisabled : {}),
-          }}
-          title="Send message"
-        >
-          Send
-        </button>
       </div>
     </div>
   );
@@ -257,25 +232,29 @@ export function ChatPanel() {
 
 const styles = {
   container: {
+    height: '100%',
     display: 'flex',
     flexDirection: 'column',
-    height: '100%',
-    backgroundColor: '#0f172a',
-    position: 'relative',
+    backgroundColor: 'transparent',
+    overflow: 'hidden',
   },
   messagesList: {
     flex: 1,
     overflowY: 'auto',
-    padding: '16px 14px',
+    padding: '16px',
     display: 'flex',
     flexDirection: 'column',
     gap: '12px',
   },
   loadingBanner: {
     textAlign: 'center',
-    fontSize: '11px',
-    color: '#94a3b8',
-    padding: '4px',
+    padding: '6px',
+    fontSize: '0.75rem',
+    color: 'var(--text-muted)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '6px',
   },
   emptyContainer: {
     display: 'flex',
@@ -283,180 +262,142 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     height: '100%',
-    color: '#64748b',
     textAlign: 'center',
-    padding: '20px',
+    padding: '24px 16px',
   },
-  emptyIcon: {
-    fontSize: '36px',
-    marginBottom: '8px',
+  emptyIconBox: {
+    width: '48px',
+    height: '48px',
+    borderRadius: '50%',
+    backgroundColor: 'rgba(var(--primary-rgb), 0.12)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: '12px',
   },
   emptyTitle: {
-    fontSize: '14px',
+    fontSize: '0.9375rem',
     fontWeight: '600',
-    color: '#94a3b8',
+    color: 'var(--text-primary)',
     marginBottom: '4px',
   },
   emptySubtitle: {
-    fontSize: '12px',
-    color: '#64748b',
+    fontSize: '0.8125rem',
+    color: 'var(--text-secondary)',
+    lineHeight: '1.4',
   },
   systemMessage: {
-    display: 'flex',
+    alignSelf: 'center',
+    display: 'inline-flex',
     alignItems: 'center',
-    justifyContent: 'center',
     gap: '6px',
     padding: '4px 10px',
+    borderRadius: 'var(--radius-full)',
+    backgroundColor: 'var(--glass-bg-subtle)',
+    border: '1px solid var(--glass-border-subtle)',
+    fontSize: '0.6875rem',
+    color: 'var(--text-muted)',
     margin: '4px 0',
-    fontSize: '11px',
-    color: '#94a3b8',
-    fontStyle: 'italic',
   },
   systemDot: {
-    color: '#38bdf8',
-    fontWeight: 'bold',
-  },
-  systemText: {
-    color: '#94a3b8',
+    color: 'var(--primary)',
   },
   systemTime: {
-    fontSize: '10px',
-    color: '#64748b',
-    marginLeft: '4px',
+    opacity: 0.7,
   },
   messageRow: {
     display: 'flex',
-    alignItems: 'flex-start',
-    gap: '10px',
-    maxWidth: '85%',
-  },
-  messageRowYou: {
-    alignSelf: 'flex-end',
-    flexDirection: 'row',
+    gap: '8px',
+    width: '100%',
   },
   avatar: {
-    width: '30px',
-    height: '30px',
+    width: '28px',
+    height: '28px',
     borderRadius: '50%',
-    color: '#ffffff',
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontSize: '0.75rem',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontSize: '12px',
-    fontWeight: '600',
     flexShrink: 0,
-    marginTop: '2px',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+    marginTop: '4px',
   },
-  bubbleContainer: {
+  messageContent: {
     display: 'flex',
     flexDirection: 'column',
-    alignItems: 'flex-start',
-    minWidth: 0,
-  },
-  bubbleContainerYou: {
-    alignItems: 'flex-end',
+    maxWidth: '82%',
+    gap: '3px',
   },
   metaRow: {
     display: 'flex',
-    alignItems: 'baseline',
+    alignItems: 'center',
     gap: '6px',
-    marginBottom: '3px',
-    padding: '0 2px',
+    padding: '0 4px',
   },
   senderName: {
-    fontSize: '11px',
+    fontSize: '0.6875rem',
     fontWeight: '600',
-    color: '#cbd5e1',
+    color: 'var(--text-secondary)',
   },
-  timestamp: {
-    fontSize: '10px',
-    color: '#64748b',
+  messageTime: {
+    fontSize: '0.625rem',
+    color: 'var(--text-muted)',
   },
   bubble: {
     padding: '8px 12px',
-    borderRadius: '12px',
-    fontSize: '13px',
-    lineHeight: '1.45',
-    whiteSpace: 'pre-wrap',
+    borderRadius: '14px',
+    fontSize: '0.8125rem',
+    lineHeight: '1.4',
     wordBreak: 'break-word',
-  },
-  bubbleOther: {
-    backgroundColor: '#1e293b',
-    color: '#f8fafc',
-    borderTopLeftRadius: '2px',
-    border: '1px solid #334155',
+    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
   },
   bubbleYou: {
-    backgroundColor: '#2563eb',
-    color: '#ffffff',
-    borderTopRightRadius: '2px',
+    background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%)',
+    color: '#FFFFFF',
+    borderBottomRightRadius: '3px',
   },
-  errorAlert: {
-    backgroundColor: '#7f1d1d',
-    color: '#fecaca',
-    padding: '6px 12px',
-    fontSize: '12px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderTop: '1px solid #991b1b',
-  },
-  dismissError: {
-    background: 'none',
-    border: 'none',
-    color: '#fecaca',
-    cursor: 'pointer',
-    fontSize: '12px',
+  bubbleThem: {
+    backgroundColor: 'var(--glass-bg-strong)',
+    color: 'var(--text-primary)',
+    border: '1px solid var(--glass-border)',
+    borderBottomLeftRadius: '3px',
   },
   inputArea: {
-    padding: '12px',
-    borderTop: '1px solid #1e293b',
-    backgroundColor: '#090d16',
+    padding: '12px 14px',
+    borderTop: '1px solid var(--glass-border-subtle)',
     display: 'flex',
+    flexDirection: 'column',
     gap: '8px',
-    alignItems: 'flex-end',
+    backgroundColor: 'var(--glass-bg-subtle)',
   },
-  inputWrapper: {
-    flex: 1,
-    position: 'relative',
+  errorAlert: {
     display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '6px 10px',
+    borderRadius: 'var(--radius-sm)',
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    color: 'var(--danger)',
+    fontSize: '0.75rem',
+  },
+  inputRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
   },
   textarea: {
-    width: '100%',
-    backgroundColor: '#1e293b',
-    border: '1px solid #334155',
-    borderRadius: '8px',
-    color: '#f8fafc',
-    fontSize: '13px',
-    padding: '8px 10px',
-    outline: 'none',
+    flex: 1,
     resize: 'none',
-    fontFamily: 'inherit',
-    lineHeight: '1.4',
-  },
-  charCount: {
-    position: 'absolute',
-    bottom: '6px',
-    right: '8px',
-    fontSize: '10px',
+    maxHeight: '80px',
+    padding: '8px 12px',
+    fontSize: '0.8125rem',
   },
   sendButton: {
-    padding: '8px 14px',
-    backgroundColor: '#3b82f6',
-    color: '#ffffff',
-    border: 'none',
-    borderRadius: '8px',
-    fontSize: '13px',
-    fontWeight: '500',
-    cursor: 'pointer',
-    height: '38px',
-    transition: 'background-color 0.15s ease',
-  },
-  sendButtonDisabled: {
-    backgroundColor: '#334155',
-    color: '#64748b',
-    cursor: 'not-allowed',
+    width: '36px',
+    height: '36px',
+    padding: 0,
+    borderRadius: 'var(--radius-md)',
+    flexShrink: 0,
   },
 };
-

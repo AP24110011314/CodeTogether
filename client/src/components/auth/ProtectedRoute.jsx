@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore.js';
+import { Loader2 } from 'lucide-react';
 
 export function ProtectedRoute({ children }) {
   const { user, isInitialized } = useAuthStore();
@@ -8,10 +9,16 @@ export function ProtectedRoute({ children }) {
 
   if (!isInitialized) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#1e1e2e', color: '#cdd6f4' }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '18px', marginBottom: '8px' }}>Loading CodeTogether...</div>
-          <div style={{ opacity: 0.7, fontSize: '14px' }}>Verifying authentication</div>
+      <div style={styles.loadingContainer}>
+        <div className="glass-strong" style={styles.card}>
+          <div className="mac-traffic-lights" style={{ marginBottom: '14px' }}>
+            <span className="mac-dot mac-dot-close" />
+            <span className="mac-dot mac-dot-min" />
+            <span className="mac-dot mac-dot-max" />
+          </div>
+          <Loader2 size={28} className="spinner" style={{ animation: 'spin 1s linear infinite', color: 'var(--primary)', marginBottom: '10px' }} />
+          <div style={styles.title}>Loading CodeTogether...</div>
+          <div style={styles.subtitle}>Verifying workstation credentials</div>
         </div>
       </div>
     );
@@ -24,3 +31,30 @@ export function ProtectedRoute({ children }) {
   return children;
 }
 
+const styles = {
+  loadingContainer: {
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: '100vh',
+    padding: '24px',
+  },
+  card: {
+    padding: '32px 48px',
+    borderRadius: 'var(--radius-xl)',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    textAlign: 'center',
+  },
+  title: {
+    fontSize: '1rem',
+    fontWeight: '600',
+    color: 'var(--text-primary)',
+    marginBottom: '4px',
+  },
+  subtitle: {
+    fontSize: '0.8125rem',
+    color: 'var(--text-secondary)',
+  },
+};

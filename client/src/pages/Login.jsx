@@ -1,80 +1,283 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore.js';
+import { ThemeToggle } from '../components/common/ThemeToggle.jsx';
+import {
+  Code2,
+  Lock,
+  Mail,
+  Eye,
+  EyeOff,
+  Sparkles,
+  Zap,
+  GraduationCap,
+  ShieldCheck,
+  ArrowRight,
+  AlertCircle,
+  Loader2,
+} from 'lucide-react';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const [localError, setLocalError] = useState('');
-  const { login, isLoading } = useAuthStore();
+
+  const { login, isLoading, user, isInitialized } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
 
   const from = location.state?.from?.pathname || '/';
 
+  // Redirect if already logged in
+  useEffect(() => {
+    if (isInitialized && user) {
+      navigate('/', { replace: true });
+    }
+  }, [user, isInitialized, navigate]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isLoading) return;
     setLocalError('');
-    if (!email || !password) {
-      setLocalError('Please fill in all fields');
+
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      setLocalError('Please enter your email address');
+      return;
+    }
+    if (!password) {
+      setLocalError('Please enter your password');
       return;
     }
 
     try {
-      await login({ email, password });
+      await login({ email: trimmedEmail, password });
       navigate(from, { replace: true });
     } catch (err) {
-      setLocalError(err.message || 'Login failed');
+      setLocalError(err.message || 'Invalid email or password');
     }
   };
 
+  const handleDemoFill = (demoEmail) => {
+    setEmail(demoEmail);
+    setPassword('password123');
+    setLocalError('');
+  };
+
   return (
-    <div style={styles.container}>
-      <div style={styles.card}>
-        <div style={styles.header}>
-          <h1 style={styles.title}>CodeTogether</h1>
-          <p style={styles.subtitle}>Sign in to your collaborative workspace</p>
+    <div style={styles.pageWrapper}>
+      <div className="glass-strong" style={styles.cardContainer}>
+        {/* LEFT PANEL: Educational Brand & macOS Window Preview */}
+        <div style={styles.brandPanel}>
+          <div style={styles.brandHeader}>
+            <div style={styles.logoBadge}>
+              <Code2 size={24} style={{ color: '#FFFFFF' }} />
+            </div>
+            <div>
+              <h2 style={styles.brandLogoText}>CodeTogether</h2>
+              <span className="badge-glass badge-primary" style={{ fontSize: '0.7rem' }}>
+                macOS Tahoe Edition
+              </span>
+            </div>
+          </div>
+
+          <div style={styles.taglineSection}>
+            <h1 style={styles.tagline}>
+              Learn and code together, <span style={styles.gradientHighlight}>in real time</span>.
+            </h1>
+            <p style={styles.taglineDesc}>
+              The collaborative coding canvas engineered for students, educators, and dev teams.
+            </p>
+          </div>
+
+          {/* macOS Code Preview Window */}
+          <div className="glass-subtle" style={styles.macWindow}>
+            <div style={styles.macWindowHeader}>
+              <div className="mac-traffic-lights">
+                <span className="mac-dot mac-dot-close" />
+                <span className="mac-dot mac-dot-min" />
+                <span className="mac-dot mac-dot-max" />
+              </div>
+              <span style={styles.macWindowTitle}>workspace.py</span>
+            </div>
+            <pre style={styles.macCodeBody}>
+              <code>
+                <span style={{ color: '#93C5FD' }}># Live interactive classroom</span>{'\n'}
+                <span style={{ color: '#F472B6' }}>async def</span> <span style={{ color: '#6EE7B7' }}>collaborate</span>():{'\n'}
+                {'  '}<span style={{ color: '#FBBF24' }}>peers</span> = <span style={{ color: '#A78BFA' }}>await</span> room.<span style={{ color: '#6EE7B7' }}>connect</span>(){'\n'}
+                {'  '}<span style={{ color: '#F472B6' }}>for</span> learner <span style={{ color: '#F472B6' }}>in</span> peers:{'\n'}
+                {'    '}learner.<span style={{ color: '#6EE7B7' }}>sync_cursor</span>(live=<span style={{ color: '#38BDF8' }}>True</span>){'\n'}
+                {'    '}learner.<span style={{ color: '#6EE7B7' }}>execute_code</span>()
+              </code>
+            </pre>
+          </div>
+
+          {/* Value Props */}
+          <div style={styles.featuresList}>
+            <div style={styles.featureItem}>
+              <Zap size={18} style={{ color: 'var(--primary)', flexShrink: 0 }} />
+              <span style={styles.featureText}>Sub-millisecond Yjs CRDT conflict-free document sync</span>
+            </div>
+            <div style={styles.featureItem}>
+              <GraduationCap size={18} style={{ color: 'var(--secondary)', flexShrink: 0 }} />
+              <span style={styles.featureText}>Classroom-ready awareness, colored cursors & live chat</span>
+            </div>
+            <div style={styles.featureItem}>
+              <ShieldCheck size={18} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+              <span style={styles.featureText}>Hardened multi-runtime sandbox with memory watchdogs</span>
+            </div>
+          </div>
         </div>
 
-        {localError && <div style={styles.error}>{localError}</div>}
-
-        <form onSubmit={handleSubmit} style={styles.form}>
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              required
-              style={styles.input}
-              autoComplete="email"
-            />
+        {/* RIGHT PANEL: Sign-In Form */}
+        <div style={styles.formPanel}>
+          <div style={styles.formTopBar}>
+            <span style={styles.welcomePill}>
+              <Sparkles size={14} style={{ color: 'var(--accent)' }} /> Welcome Back
+            </span>
+            <ThemeToggle />
           </div>
 
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              required
-              style={styles.input}
-              autoComplete="current-password"
-            />
+          <div style={styles.formHeader}>
+            <h2 style={styles.formTitle}>Sign in to your account</h2>
+            <p style={styles.formSubtitle}>Enter your credentials to access your workspaces</p>
           </div>
 
-          <button type="submit" disabled={isLoading} style={styles.button}>
-            {isLoading ? 'Signing in...' : 'Sign In'}
-          </button>
-        </form>
+          {localError && (
+            <div role="alert" style={styles.alertBox}>
+              <AlertCircle size={18} style={{ color: 'var(--danger)', flexShrink: 0 }} />
+              <span style={styles.alertText}>{localError}</span>
+            </div>
+          )}
 
-        <div style={styles.footer}>
-          Don't have an account?{' '}
-          <Link to="/register" style={styles.link}>
-            Register
-          </Link>
+          <form onSubmit={handleSubmit} style={styles.form}>
+            {/* Email Field */}
+            <div style={styles.inputGroup}>
+              <label htmlFor="login-email" style={styles.label}>
+                Email address
+              </label>
+              <div style={styles.inputWrapper}>
+                <Mail size={18} style={styles.inputIcon} />
+                <input
+                  id="login-email"
+                  type="email"
+                  className="input-glass"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="name@university.edu"
+                  required
+                  autoComplete="email"
+                  style={{ paddingLeft: '40px' }}
+                />
+              </div>
+            </div>
+
+            {/* Password Field */}
+            <div style={styles.inputGroup}>
+              <div style={styles.labelRow}>
+                <label htmlFor="login-password" style={styles.label}>
+                  Password
+                </label>
+                <a
+                  href="#forgot"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setLocalError('For local development, demo accounts use password: password123');
+                  }}
+                  style={styles.forgotLink}
+                >
+                  Forgot password?
+                </a>
+              </div>
+              <div style={styles.inputWrapper}>
+                <Lock size={18} style={styles.inputIcon} />
+                <input
+                  id="login-password"
+                  type={showPassword ? 'text' : 'password'}
+                  className="input-glass"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  autoComplete="current-password"
+                  style={{ paddingLeft: '40px', paddingRight: '40px' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={styles.eyeButton}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+
+            {/* Remember Me */}
+            <div style={styles.rememberRow}>
+              <label style={styles.checkboxLabel}>
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  style={styles.checkbox}
+                />
+                <span>Remember this workstation</span>
+              </label>
+            </div>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="btn btn-primary"
+              style={{ width: '100%', padding: '12px', fontSize: '0.9375rem' }}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 size={18} className="spinner" style={{ animation: 'spin 1s linear infinite' }} />
+                  <span>Authenticating...</span>
+                </>
+              ) : (
+                <>
+                  <span>Sign In</span>
+                  <ArrowRight size={18} />
+                </>
+              )}
+            </button>
+          </form>
+
+          {/* Demo Fill Shortcuts */}
+          <div style={styles.demoSection}>
+            <span style={styles.demoTitle}>Quick Demo Sign-In:</span>
+            <div style={styles.demoButtons}>
+              <button
+                type="button"
+                onClick={() => handleDemoFill('alice@codetogether.dev')}
+                className="btn btn-secondary"
+                style={{ padding: '6px 10px', fontSize: '0.75rem' }}
+              >
+                👤 Alice (Owner)
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDemoFill('bob@codetogether.dev')}
+                className="btn btn-secondary"
+                style={{ padding: '6px 10px', fontSize: '0.75rem' }}
+              >
+                👥 Bob (Editor)
+              </button>
+            </div>
+          </div>
+
+          <div style={styles.formFooter}>
+            <span style={{ color: 'var(--text-secondary)' }}>Don't have an account?</span>{' '}
+            <Link to="/register" style={styles.registerLink}>
+              Create one now
+            </Link>
+          </div>
         </div>
       </div>
     </div>
@@ -82,97 +285,254 @@ export default function Login() {
 }
 
 const styles = {
-  container: {
+  pageWrapper: {
     minHeight: '100vh',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#0f172a',
-    color: '#f8fafc',
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-    padding: '16px',
+    padding: '24px 16px',
   },
-  card: {
+  cardContainer: {
     width: '100%',
-    maxWidth: '420px',
-    backgroundColor: '#1e293b',
+    maxWidth: '1020px',
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
+    overflow: 'hidden',
+  },
+  brandPanel: {
+    padding: '40px',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'space-between',
+    borderRight: '1px solid var(--glass-border-subtle)',
+    background: 'linear-gradient(180deg, rgba(var(--primary-rgb), 0.05) 0%, rgba(var(--secondary-rgb), 0.05) 100%)',
+  },
+  brandHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    marginBottom: '28px',
+  },
+  logoBadge: {
+    width: '42px',
+    height: '42px',
     borderRadius: '12px',
-    padding: '32px',
-    boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.3)',
-    border: '1px solid #334155',
+    background: 'linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxShadow: '0 4px 12px rgba(var(--primary-rgb), 0.35)',
   },
-  header: {
-    marginBottom: '24px',
-    textAlign: 'center',
-  },
-  title: {
-    fontSize: '28px',
+  brandLogoText: {
+    fontSize: '1.25rem',
     fontWeight: '700',
-    color: '#38bdf8',
-    margin: '0 0 8px 0',
+    color: 'var(--text-primary)',
+    letterSpacing: '-0.02em',
   },
-  subtitle: {
-    fontSize: '14px',
-    color: '#94a3b8',
-    margin: 0,
+  taglineSection: {
+    marginBottom: '28px',
+  },
+  tagline: {
+    fontSize: '1.75rem',
+    fontWeight: '800',
+    lineHeight: '1.25',
+    color: 'var(--text-primary)',
+    letterSpacing: '-0.03em',
+    marginBottom: '10px',
+  },
+  gradientHighlight: {
+    background: 'linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+  },
+  taglineDesc: {
+    fontSize: '0.9375rem',
+    color: 'var(--text-secondary)',
+    lineHeight: '1.5',
+  },
+  macWindow: {
+    borderRadius: '14px',
+    overflow: 'hidden',
+    marginBottom: '28px',
+    boxShadow: '0 12px 30px rgba(0, 0, 0, 0.15)',
+  },
+  macWindowHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    padding: '10px 14px',
+    borderBottom: '1px solid var(--glass-border-subtle)',
+    background: 'rgba(0, 0, 0, 0.08)',
+  },
+  macWindowTitle: {
+    fontSize: '0.75rem',
+    color: 'var(--text-muted)',
+    marginLeft: 'auto',
+    marginRight: 'auto',
+    fontFamily: 'var(--font-mono)',
+  },
+  macCodeBody: {
+    padding: '14px 18px',
+    fontFamily: 'var(--font-mono)',
+    fontSize: '0.8125rem',
+    lineHeight: '1.6',
+    background: 'var(--editor-bg)',
+    color: 'var(--text-primary)',
+    overflowX: 'auto',
+  },
+  featuresList: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '12px',
+  },
+  featureItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+  },
+  featureText: {
+    fontSize: '0.8125rem',
+    color: 'var(--text-secondary)',
+    fontWeight: '500',
+  },
+  formPanel: {
+    padding: '40px',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+  },
+  formTopBar: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: '20px',
+  },
+  welcomePill: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    fontSize: '0.75rem',
+    fontWeight: '600',
+    color: 'var(--text-muted)',
+    textTransform: 'uppercase',
+    letterSpacing: '0.05em',
+  },
+  formHeader: {
+    marginBottom: '24px',
+  },
+  formTitle: {
+    fontSize: '1.5rem',
+    fontWeight: '700',
+    color: 'var(--text-primary)',
+    letterSpacing: '-0.02em',
+    marginBottom: '6px',
+  },
+  formSubtitle: {
+    fontSize: '0.875rem',
+    color: 'var(--text-secondary)',
+  },
+  alertBox: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    padding: '12px 14px',
+    borderRadius: 'var(--radius-md)',
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    border: '1px solid rgba(239, 68, 68, 0.25)',
+    marginBottom: '20px',
+  },
+  alertText: {
+    fontSize: '0.8125rem',
+    color: 'var(--danger)',
+    fontWeight: '500',
   },
   form: {
     display: 'flex',
-    direction: 'column',
     flexDirection: 'column',
-    gap: '16px',
+    gap: '18px',
   },
   inputGroup: {
     display: 'flex',
     flexDirection: 'column',
     gap: '6px',
   },
+  labelRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   label: {
-    fontSize: '13px',
-    fontWeight: '500',
-    color: '#cbd5e1',
-  },
-  input: {
-    padding: '10px 12px',
-    backgroundColor: '#0f172a',
-    border: '1px solid #475569',
-    borderRadius: '6px',
-    color: '#f8fafc',
-    fontSize: '14px',
-    outline: 'none',
-    transition: 'border-color 0.2s',
-  },
-  button: {
-    marginTop: '8px',
-    padding: '11px',
-    backgroundColor: '#0284c7',
-    color: '#ffffff',
-    border: 'none',
-    borderRadius: '6px',
-    fontSize: '14px',
+    fontSize: '0.8125rem',
     fontWeight: '600',
+    color: 'var(--text-primary)',
+  },
+  forgotLink: {
+    fontSize: '0.75rem',
+    color: 'var(--primary)',
+    textDecoration: 'none',
+  },
+  inputWrapper: {
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center',
+  },
+  inputIcon: {
+    position: 'absolute',
+    left: '12px',
+    color: 'var(--text-muted)',
+    pointerEvents: 'none',
+  },
+  eyeButton: {
+    position: 'absolute',
+    right: '12px',
+    background: 'none',
+    border: 'none',
+    color: 'var(--text-muted)',
     cursor: 'pointer',
-    transition: 'background-color 0.2s',
+    display: 'flex',
+    alignItems: 'center',
+    padding: '4px',
   },
-  error: {
-    padding: '10px 12px',
-    backgroundColor: '#451a1a',
-    border: '1px solid #ef4444',
-    color: '#fca5a5',
-    borderRadius: '6px',
-    fontSize: '13px',
-    marginBottom: '16px',
+  rememberRow: {
+    display: 'flex',
+    alignItems: 'center',
   },
-  footer: {
+  checkboxLabel: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    fontSize: '0.8125rem',
+    color: 'var(--text-secondary)',
+    cursor: 'pointer',
+  },
+  checkbox: {
+    accentColor: 'var(--primary)',
+    cursor: 'pointer',
+  },
+  demoSection: {
+    marginTop: '20px',
+    paddingTop: '16px',
+    borderTop: '1px solid var(--glass-border-subtle)',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px',
+  },
+  demoTitle: {
+    fontSize: '0.75rem',
+    color: 'var(--text-muted)',
+    fontWeight: '500',
+  },
+  demoButtons: {
+    display: 'flex',
+    gap: '8px',
+  },
+  formFooter: {
     marginTop: '24px',
     textAlign: 'center',
-    fontSize: '13px',
-    color: '#94a3b8',
+    fontSize: '0.875rem',
   },
-  link: {
-    color: '#38bdf8',
+  registerLink: {
+    color: 'var(--primary)',
+    fontWeight: '600',
     textDecoration: 'none',
-    fontWeight: '500',
   },
 };
-

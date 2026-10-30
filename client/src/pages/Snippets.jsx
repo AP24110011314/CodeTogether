@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import {
   getSnippetsApi,
   deleteSnippetApi,
@@ -8,7 +8,23 @@ import {
 } from '../api/snippets.js';
 import { createRoomApi } from '../api/rooms.js';
 import { useAuthStore } from '../store/authStore.js';
-import { LanguageSelect } from '../components/editor/LanguageSelect.jsx';
+import { ThemeToggle } from '../components/common/ThemeToggle.jsx';
+import {
+  Code2,
+  Bookmark,
+  Plus,
+  Search,
+  Copy,
+  Check,
+  ExternalLink,
+  Edit3,
+  Trash2,
+  ArrowLeft,
+  X,
+  FileCode,
+  Tag,
+  Loader2,
+} from 'lucide-react';
 
 export default function Snippets() {
   const navigate = useNavigate();
@@ -85,14 +101,14 @@ export default function Snippets() {
 
   const handleOpenInNewRoom = async (snippet) => {
     try {
-      const data = await createRoomApi({
-        name: snippet.title,
+      const room = await createRoomApi({
+        name: `${snippet.title} (from snippet)`,
         language: snippet.language || 'javascript',
         visibility: 'public',
       });
-      navigate(`/room/${data.room.slug}`);
+      navigate(`/room/${room.slug}`);
     } catch (err) {
-      alert(err.response?.data?.error?.message || 'Failed to create room');
+      alert(err.response?.data?.error?.message || 'Failed to create room from snippet');
     }
   };
 
@@ -155,9 +171,7 @@ export default function Snippets() {
       setIsEditModalOpen(false);
       fetchSnippets();
     } catch (err) {
-      setModalError(
-        err.response?.data?.error?.message || 'Failed to save snippet'
-      );
+      setModalError(err.response?.data?.error?.message || 'Failed to save snippet');
     } finally {
       setIsSubmitting(false);
     }
@@ -165,44 +179,47 @@ export default function Snippets() {
 
   return (
     <div style={styles.container}>
-      {/* Top Navbar */}
-      <header style={styles.navbar}>
+      {/* Translucent Top Header */}
+      <header className="glass" style={styles.navBar}>
         <div style={styles.navLeft}>
-          <button onClick={() => navigate('/')} style={styles.backButton}>
-            &larr; Dashboard
-          </button>
-          <span style={styles.brandTitle}>CodeTogether</span>
-          <span style={styles.pageBadge}>Snippets Library</span>
+          <Link to="/" style={styles.backLink} title="Back to Workspaces">
+            <ArrowLeft size={18} />
+          </Link>
+          <div style={styles.logoBadge}>
+            <Bookmark size={18} style={{ color: '#FFFFFF' }} />
+          </div>
+          <div>
+            <h1 style={styles.navTitle}>Snippet Library</h1>
+            <span style={styles.navSubtitle}>{total} saved algorithms & blocks</span>
+          </div>
         </div>
 
         <div style={styles.navRight}>
-          <button onClick={openCreateModal} style={styles.newSnippetButton}>
-            + New Snippet
+          <button onClick={openCreateModal} className="btn btn-primary" style={{ padding: '8px 16px' }}>
+            <Plus size={16} />
+            <span>New Snippet</span>
           </button>
-          <div
-            style={{
-              ...styles.userAvatar,
-              backgroundColor: user?.avatarColor || '#38bdf8',
-            }}
-          >
-            {user?.name ? user.name[0].toUpperCase() : 'U'}
-          </div>
+          <ThemeToggle />
         </div>
       </header>
 
-      {/* Main Content Area */}
+      {/* Main Content */}
       <main style={styles.main}>
         {/* Search & Filter Toolbar */}
-        <div style={styles.filterToolbar}>
+        <div style={styles.toolbar}>
           <form onSubmit={handleSearchSubmit} style={styles.searchForm}>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search snippets by title, tag, or code..."
-              style={styles.searchInput}
-            />
-            <button type="submit" style={styles.searchButton}>
+            <div style={styles.searchWrapper}>
+              <Search size={16} style={styles.searchIcon} />
+              <input
+                type="text"
+                className="input-glass"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search snippets by title, tag, or code..."
+                style={{ paddingLeft: '38px', minWidth: '280px' }}
+              />
+            </div>
+            <button type="submit" className="btn btn-secondary">
               Search
             </button>
           </form>
@@ -214,7 +231,8 @@ export default function Snippets() {
                 setSelectedLang(e.target.value);
                 setPage(1);
               }}
-              style={styles.filterSelect}
+              className="input-glass"
+              style={{ cursor: 'pointer', minWidth: '150px' }}
             >
               <option value="">All Languages</option>
               <option value="javascript">JavaScript</option>
@@ -223,13 +241,14 @@ export default function Snippets() {
               <option value="java">Java</option>
               <option value="cpp">C++</option>
               <option value="c">C</option>
+              <option value="go">Go</option>
               <option value="html">HTML</option>
               <option value="css">CSS</option>
               <option value="json">JSON</option>
             </select>
 
             {selectedTag && (
-              <div style={styles.activeTagBadge}>
+              <div className="badge-glass badge-primary" style={{ padding: '6px 10px', gap: '8px' }}>
                 <span>Tag: {selectedTag}</span>
                 <button
                   onClick={() => {
@@ -247,42 +266,56 @@ export default function Snippets() {
 
         {/* Snippets Grid */}
         {isLoading ? (
-          <div style={styles.loadingContainer}>
-            <div style={styles.spinner}></div>
-            <p style={{ marginTop: '12px', color: '#94a3b8' }}>
-              Loading snippets...
-            </p>
+          <div style={styles.grid}>
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="glass" style={styles.skeletonCard}>
+                <div style={styles.skeletonHeader} />
+                <div style={styles.skeletonCode} />
+              </div>
+            ))}
           </div>
         ) : snippets.length === 0 ? (
-          <div style={styles.emptyContainer}>
-            <div style={styles.emptyIcon}>📂</div>
+          <div className="glass" style={styles.emptyContainer}>
+            <div style={styles.emptyIconBox}>
+              <FileCode size={36} style={{ color: 'var(--primary)' }} />
+            </div>
             <h3 style={styles.emptyTitle}>No snippets found</h3>
             <p style={styles.emptySubtitle}>
               {searchQuery || selectedLang || selectedTag
-                ? 'Try adjusting your search filters'
-                : 'Save useful code blocks from the editor or create one here.'}
+                ? 'Try adjusting your search filters or clear tags.'
+                : 'Save reusable code blocks directly from the Monaco editor or create one here.'}
             </p>
-            <button onClick={openCreateModal} style={styles.newSnippetButton}>
-              Create your first snippet
+            <button onClick={openCreateModal} className="btn btn-primary" style={{ marginTop: '12px' }}>
+              <Plus size={16} />
+              <span>Create your first snippet</span>
             </button>
           </div>
         ) : (
           <div style={styles.grid}>
             {snippets.map((s) => (
-              <div key={s._id} style={styles.card}>
-                <div style={styles.cardHeader}>
-                  <div style={styles.cardTitleRow}>
-                    <h4 style={styles.cardTitle} title={s.title}>
-                      {s.title}
-                    </h4>
-                    <span style={styles.langBadge}>{s.language}</span>
+              <div key={s._id} className="glass glass-hover" style={styles.card}>
+                {/* macOS Card Top Header */}
+                <div style={styles.cardTop}>
+                  <div className="mac-traffic-lights">
+                    <span className="mac-dot mac-dot-close" />
+                    <span className="mac-dot mac-dot-min" />
+                    <span className="mac-dot mac-dot-max" />
                   </div>
-                  <span style={styles.cardDate}>
-                    {new Date(s.updatedAt).toLocaleDateString()}
-                  </span>
+                  <div style={styles.badgesRow}>
+                    <span className="badge-glass badge-primary" style={{ textTransform: 'capitalize' }}>
+                      {s.language}
+                    </span>
+                    <span style={styles.cardDate}>
+                      {new Date(s.updatedAt || s.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
                 </div>
 
-                {/* Code Preview */}
+                <h3 style={styles.cardTitle} title={s.title}>
+                  {s.title}
+                </h3>
+
+                {/* Code Preview Box */}
                 <pre style={styles.codeBlock}>
                   <code>{s.code}</code>
                 </pre>
@@ -290,16 +323,17 @@ export default function Snippets() {
                 {/* Tags */}
                 {s.tags && s.tags.length > 0 && (
                   <div style={styles.tagsContainer}>
-                    {s.tags.map((t) => (
+                    {s.tags.map((tag) => (
                       <span
-                        key={t}
+                        key={tag}
                         onClick={() => {
-                          setSelectedTag(t);
+                          setSelectedTag(tag);
                           setPage(1);
                         }}
-                        style={styles.tagPill}
+                        className="badge-glass"
+                        style={{ cursor: 'pointer' }}
                       >
-                        #{t}
+                        #{tag}
                       </span>
                     ))}
                   </div>
@@ -307,34 +341,45 @@ export default function Snippets() {
 
                 {/* Card Actions */}
                 <div style={styles.cardActions}>
-                  <button
-                    onClick={() => handleCopyCode(s)}
-                    style={styles.actionBtn}
-                    title="Copy code to clipboard"
-                  >
-                    {copiedId === s._id ? '✓ Copied' : '📋 Copy'}
-                  </button>
-                  <button
-                    onClick={() => handleOpenInNewRoom(s)}
-                    style={styles.actionBtn}
-                    title="Open snippet in a collaborative room"
-                  >
-                    🚀 Open in Room
-                  </button>
-                  <button
-                    onClick={() => openEditModal(s)}
-                    style={styles.actionBtn}
-                    title="Edit snippet"
-                  >
-                    ✏️ Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(s._id)}
-                    style={{ ...styles.actionBtn, color: '#f87171' }}
-                    title="Delete snippet"
-                  >
-                    🗑️
-                  </button>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <button
+                      onClick={() => handleCopyCode(s)}
+                      className="btn btn-secondary"
+                      style={styles.actionBtn}
+                      title="Copy code"
+                    >
+                      {copiedId === s._id ? <Check size={14} style={{ color: 'var(--success)' }} /> : <Copy size={14} />}
+                      <span>{copiedId === s._id ? 'Copied' : 'Copy'}</span>
+                    </button>
+                    <button
+                      onClick={() => handleOpenInNewRoom(s)}
+                      className="btn btn-secondary"
+                      style={styles.actionBtn}
+                      title="Open in new collaborative workspace"
+                    >
+                      <ExternalLink size={14} />
+                      <span>Workspace</span>
+                    </button>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    <button
+                      onClick={() => openEditModal(s)}
+                      className="btn-ghost"
+                      style={styles.iconBtn}
+                      title="Edit snippet"
+                    >
+                      <Edit3 size={15} />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(s._id)}
+                      className="btn-ghost"
+                      style={{ ...styles.iconBtn, color: 'var(--danger)' }}
+                      title="Delete snippet"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -345,25 +390,19 @@ export default function Snippets() {
         {totalPages > 1 && (
           <div style={styles.pagination}>
             <button
-              onClick={() => setPage((p) => Math.max(p - 1, 1))}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
-              style={{
-                ...styles.pageButton,
-                ...(page === 1 ? styles.pageButtonDisabled : {}),
-              }}
+              className="btn btn-secondary"
             >
               Previous
             </button>
             <span style={styles.pageInfo}>
-              Page {page} of {totalPages} ({total} snippets)
+              Page {page} of {totalPages}
             </span>
             <button
-              onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
-              style={{
-                ...styles.pageButton,
-                ...(page === totalPages ? styles.pageButtonDisabled : {}),
-              }}
+              className="btn btn-secondary"
             >
               Next
             </button>
@@ -371,67 +410,91 @@ export default function Snippets() {
         )}
       </main>
 
-      {/* Edit / Create Modal */}
+      {/* Edit / Create Snippet Modal */}
       {isEditModalOpen && (
-        <div style={styles.overlay} onClick={() => setIsEditModalOpen(false)}>
-          <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+        <div className="modal-backdrop" onClick={() => setIsEditModalOpen(false)}>
+          <div
+            className="glass-strong modal-content"
+            onClick={(e) => e.stopPropagation()}
+            style={styles.modalBox}
+          >
             <div style={styles.modalHeader}>
-              <h2 style={styles.modalTitle}>
-                {editingSnippet ? 'Edit Snippet' : 'New Snippet'}
-              </h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div className="mac-traffic-lights">
+                  <span className="mac-dot mac-dot-close" onClick={() => setIsEditModalOpen(false)} style={{ cursor: 'pointer' }} />
+                  <span className="mac-dot mac-dot-min" />
+                  <span className="mac-dot mac-dot-max" />
+                </div>
+                <h3 style={styles.modalTitle}>
+                  {editingSnippet ? 'Edit Snippet' : 'Create New Snippet'}
+                </h3>
+              </div>
               <button
                 onClick={() => setIsEditModalOpen(false)}
-                style={styles.closeBtn}
+                className="btn-ghost"
+                style={{ padding: '4px' }}
               >
-                ✕
+                <X size={18} />
               </button>
             </div>
 
-            <form onSubmit={handleModalSave} style={styles.modalForm}>
-              {modalError && <div style={styles.errorAlert}>{modalError}</div>}
+            {modalError && <div style={styles.modalError}>{modalError}</div>}
 
-              <div style={styles.formGroup}>
-                <label style={styles.formLabel}>Title *</label>
+            <form onSubmit={handleModalSave} style={styles.modalForm}>
+              <div style={styles.modalField}>
+                <label style={styles.modalLabel}>Title</label>
                 <input
                   type="text"
+                  className="input-glass"
                   value={modalTitle}
                   onChange={(e) => setModalTitle(e.target.value)}
-                  placeholder="Snippet title"
-                  maxLength={100}
+                  placeholder="e.g. QuickSort Partition Algorithm"
                   required
-                  style={styles.formInput}
                   autoFocus
                 />
               </div>
 
-              <div style={styles.formRow}>
-                <div style={{ ...styles.formGroup, flex: 1 }}>
-                  <label style={styles.formLabel}>Language</label>
-                  <LanguageSelect
-                    value={modalLanguage}
-                    onChange={(l) => setModalLanguage(l)}
-                  />
-                </div>
-                <div style={{ ...styles.formGroup, flex: 2 }}>
-                  <label style={styles.formLabel}>Tags (comma-separated)</label>
-                  <input
-                    type="text"
-                    value={modalTags}
-                    onChange={(e) => setModalTags(e.target.value)}
-                    placeholder="e.g. utility, math, react"
-                    style={styles.formInput}
-                  />
-                </div>
+              <div style={styles.modalField}>
+                <label style={styles.modalLabel}>Language</label>
+                <select
+                  value={modalLanguage}
+                  onChange={(e) => setModalLanguage(e.target.value)}
+                  className="input-glass"
+                >
+                  <option value="javascript">JavaScript</option>
+                  <option value="typescript">TypeScript</option>
+                  <option value="python">Python</option>
+                  <option value="java">Java</option>
+                  <option value="cpp">C++</option>
+                  <option value="c">C</option>
+                  <option value="go">Go</option>
+                  <option value="html">HTML</option>
+                  <option value="css">CSS</option>
+                  <option value="json">JSON</option>
+                </select>
               </div>
 
-              <div style={styles.formGroup}>
-                <label style={styles.formLabel}>Code Content</label>
+              <div style={styles.modalField}>
+                <label style={styles.modalLabel}>Tags (comma separated)</label>
+                <input
+                  type="text"
+                  className="input-glass"
+                  value={modalTags}
+                  onChange={(e) => setModalTags(e.target.value)}
+                  placeholder="algorithms, sorting, leetcode"
+                />
+              </div>
+
+              <div style={styles.modalField}>
+                <label style={styles.modalLabel}>Code Content</label>
                 <textarea
+                  className="input-glass"
                   value={modalCode}
                   onChange={(e) => setModalCode(e.target.value)}
-                  rows={9}
-                  style={styles.formTextarea}
-                  spellCheck={false}
+                  placeholder="Paste or write snippet code here..."
+                  rows={8}
+                  style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8125rem' }}
+                  required
                 />
               </div>
 
@@ -439,14 +502,14 @@ export default function Snippets() {
                 <button
                   type="button"
                   onClick={() => setIsEditModalOpen(false)}
-                  style={styles.cancelBtn}
+                  className="btn btn-secondary"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  style={styles.saveBtn}
+                  className="btn btn-primary"
                 >
                   {isSubmitting ? 'Saving...' : 'Save Snippet'}
                 </button>
@@ -462,414 +525,278 @@ export default function Snippets() {
 const styles = {
   container: {
     minHeight: '100vh',
-    backgroundColor: '#0f172a',
-    color: '#f8fafc',
     display: 'flex',
     flexDirection: 'column',
   },
-  navbar: {
-    height: '60px',
-    backgroundColor: '#1e293b',
-    borderBottom: '1px solid #334155',
+  navBar: {
+    margin: '16px 24px',
+    padding: '12px 24px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: '0 24px',
+    borderRadius: 'var(--radius-xl)',
+    position: 'sticky',
+    top: '16px',
+    zIndex: 100,
   },
   navLeft: {
     display: 'flex',
     alignItems: 'center',
     gap: '14px',
   },
-  backButton: {
-    background: 'none',
-    border: '1px solid #334155',
-    color: '#94a3b8',
-    padding: '6px 12px',
-    borderRadius: '6px',
-    fontSize: '13px',
-    cursor: 'pointer',
+  backLink: {
+    padding: '8px',
+    borderRadius: 'var(--radius-sm)',
+    color: 'var(--text-secondary)',
+    display: 'flex',
+    alignItems: 'center',
   },
-  brandTitle: {
-    fontSize: '18px',
+  logoBadge: {
+    width: '36px',
+    height: '36px',
+    borderRadius: '10px',
+    background: 'linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxShadow: '0 4px 10px rgba(var(--primary-rgb), 0.35)',
+  },
+  navTitle: {
+    fontSize: '1.125rem',
     fontWeight: '700',
-    color: '#38bdf8',
+    color: 'var(--text-primary)',
+    margin: 0,
   },
-  pageBadge: {
-    backgroundColor: '#0369a133',
-    color: '#38bdf8',
-    padding: '2px 8px',
-    borderRadius: '12px',
-    fontSize: '11px',
-    fontWeight: '500',
+  navSubtitle: {
+    fontSize: '0.6875rem',
+    color: 'var(--text-muted)',
   },
   navRight: {
     display: 'flex',
     alignItems: 'center',
     gap: '14px',
   },
-  newSnippetButton: {
-    backgroundColor: '#0284c7',
-    color: '#ffffff',
-    border: 'none',
-    padding: '8px 14px',
-    borderRadius: '6px',
-    fontSize: '13px',
-    fontWeight: '600',
-    cursor: 'pointer',
-  },
-  userAvatar: {
-    width: '34px',
-    height: '34px',
-    borderRadius: '50%',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontWeight: '700',
-    fontSize: '14px',
-    color: '#ffffff',
-  },
   main: {
-    flex: 1,
-    padding: '28px',
-    maxWidth: '1280px',
-    margin: '0 auto',
+    maxWidth: '1200px',
     width: '100%',
-    boxSizing: 'border-box',
+    margin: '0 auto',
+    padding: '8px 24px 48px',
   },
-  filterToolbar: {
+  toolbar: {
     display: 'flex',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '16px',
     marginBottom: '24px',
     flexWrap: 'wrap',
-    gap: '12px',
   },
   searchForm: {
     display: 'flex',
-    gap: '8px',
-    flex: 1,
-    maxWidth: '480px',
+    alignItems: 'center',
+    gap: '10px',
+    flexWrap: 'wrap',
   },
-  searchInput: {
-    flex: 1,
-    backgroundColor: '#1e293b',
-    border: '1px solid #334155',
-    borderRadius: '6px',
-    padding: '8px 14px',
-    color: '#f8fafc',
-    fontSize: '14px',
-    outline: 'none',
+  searchWrapper: {
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center',
   },
-  searchButton: {
-    backgroundColor: '#334155',
-    color: '#f8fafc',
-    border: 'none',
-    padding: '8px 16px',
-    borderRadius: '6px',
-    fontSize: '13px',
-    fontWeight: '500',
-    cursor: 'pointer',
+  searchIcon: {
+    position: 'absolute',
+    left: '12px',
+    color: 'var(--text-muted)',
+    pointerEvents: 'none',
   },
   filterGroup: {
     display: 'flex',
     alignItems: 'center',
     gap: '10px',
   },
-  filterSelect: {
-    backgroundColor: '#1e293b',
-    border: '1px solid #334155',
-    borderRadius: '6px',
-    padding: '8px 12px',
-    color: '#f8fafc',
-    fontSize: '13px',
-    outline: 'none',
-  },
-  activeTagBadge: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-    backgroundColor: '#1e293b',
-    border: '1px solid #0284c7',
-    color: '#38bdf8',
-    padding: '4px 10px',
-    borderRadius: '6px',
-    fontSize: '12px',
-  },
   clearTagBtn: {
     background: 'none',
     border: 'none',
-    color: '#94a3b8',
+    color: 'inherit',
     cursor: 'pointer',
-    fontSize: '12px',
-    padding: 0,
+    fontSize: '0.75rem',
   },
   grid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
     gap: '20px',
   },
   card: {
-    backgroundColor: '#1e293b',
-    border: '1px solid #334155',
-    borderRadius: '10px',
-    padding: '16px',
+    padding: '18px',
+    borderRadius: 'var(--radius-lg)',
     display: 'flex',
     flexDirection: 'column',
-    gap: '12px',
+    minHeight: '260px',
   },
-  cardHeader: {
+  cardTop: {
     display: 'flex',
-    flexDirection: 'column',
-    gap: '4px',
-  },
-  cardTitleRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: '10px',
+    justifyContent: 'space-between',
+    marginBottom: '12px',
   },
-  cardTitle: {
-    margin: 0,
-    fontSize: '15px',
-    fontWeight: '600',
-    color: '#f8fafc',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
-  },
-  langBadge: {
-    backgroundColor: '#0f172a',
-    border: '1px solid #334155',
-    color: '#38bdf8',
-    padding: '1px 6px',
-    borderRadius: '4px',
-    fontSize: '11px',
-    textTransform: 'lowercase',
+  badgesRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
   },
   cardDate: {
-    fontSize: '11px',
-    color: '#64748b',
+    fontSize: '0.75rem',
+    color: 'var(--text-muted)',
+  },
+  cardTitle: {
+    fontSize: '1.0625rem',
+    fontWeight: '700',
+    color: 'var(--text-primary)',
+    marginBottom: '10px',
   },
   codeBlock: {
-    margin: 0,
-    backgroundColor: '#0f172a',
-    border: '1px solid #334155',
-    borderRadius: '6px',
-    padding: '10px 12px',
-    color: '#cbd5e1',
-    fontSize: '12px',
-    fontFamily: '"SF Mono", Monaco, Menlo, Consolas, monospace',
-    height: '110px',
+    flex: 1,
+    padding: '12px',
+    borderRadius: 'var(--radius-sm)',
+    background: 'var(--editor-bg)',
+    color: 'var(--text-primary)',
+    fontFamily: 'var(--font-mono)',
+    fontSize: '0.8125rem',
     overflow: 'hidden',
-    lineHeight: '1.4',
+    maxHeight: '130px',
+    marginBottom: '12px',
+    border: '1px solid var(--editor-border)',
   },
   tagsContainer: {
     display: 'flex',
-    flexWrap: 'wrap',
     gap: '6px',
-  },
-  tagPill: {
-    fontSize: '11px',
-    color: '#94a3b8',
-    backgroundColor: '#0f172a',
-    padding: '2px 8px',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    border: '1px solid #1e293b',
+    flexWrap: 'wrap',
+    marginBottom: '14px',
   },
   cardActions: {
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
+    justifyContent: 'space-between',
+    paddingTop: '10px',
+    borderTop: '1px solid var(--glass-border-subtle)',
     marginTop: 'auto',
-    paddingTop: '8px',
-    borderTop: '1px solid #334155',
   },
   actionBtn: {
-    background: 'none',
-    border: '1px solid #334155',
-    color: '#94a3b8',
-    padding: '5px 10px',
-    borderRadius: '5px',
-    fontSize: '12px',
-    cursor: 'pointer',
-    transition: 'all 0.15s ease',
+    padding: '6px 10px',
+    fontSize: '0.75rem',
+    borderRadius: 'var(--radius-sm)',
+  },
+  iconBtn: {
+    padding: '6px',
+    borderRadius: 'var(--radius-sm)',
+    color: 'var(--text-muted)',
+  },
+  skeletonCard: {
+    padding: '20px',
+    minHeight: '260px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '12px',
+  },
+  skeletonHeader: {
+    width: '50%',
+    height: '20px',
+    backgroundColor: 'var(--glass-border)',
+    borderRadius: '4px',
+  },
+  skeletonCode: {
+    flex: 1,
+    backgroundColor: 'var(--glass-border-subtle)',
+    borderRadius: '8px',
+  },
+  emptyContainer: {
+    padding: '48px 24px',
+    borderRadius: 'var(--radius-xl)',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    textAlign: 'center',
+  },
+  emptyIconBox: {
+    width: '64px',
+    height: '64px',
+    borderRadius: '50%',
+    backgroundColor: 'rgba(var(--primary-rgb), 0.12)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: '16px',
+  },
+  emptyTitle: {
+    fontSize: '1.25rem',
+    fontWeight: '700',
+    color: 'var(--text-primary)',
+    marginBottom: '8px',
+  },
+  emptySubtitle: {
+    fontSize: '0.875rem',
+    color: 'var(--text-secondary)',
+    maxWidth: '460px',
+    lineHeight: '1.5',
   },
   pagination: {
     display: 'flex',
-    justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: '16px',
     marginTop: '32px',
   },
-  pageButton: {
-    backgroundColor: '#1e293b',
-    border: '1px solid #334155',
-    color: '#f8fafc',
-    padding: '6px 14px',
-    borderRadius: '6px',
-    fontSize: '13px',
-    cursor: 'pointer',
-  },
-  pageButtonDisabled: {
-    opacity: 0.4,
-    cursor: 'not-allowed',
-  },
   pageInfo: {
-    fontSize: '13px',
-    color: '#94a3b8',
+    fontSize: '0.875rem',
+    color: 'var(--text-secondary)',
   },
-  emptyContainer: {
-    textAlign: 'center',
-    padding: '60px 20px',
-    backgroundColor: '#1e293b',
-    borderRadius: '12px',
-    border: '1px solid #334155',
-  },
-  emptyIcon: {
-    fontSize: '48px',
-    marginBottom: '12px',
-  },
-  emptyTitle: {
-    fontSize: '18px',
-    fontWeight: '600',
-    color: '#f8fafc',
-    marginBottom: '6px',
-  },
-  emptySubtitle: {
-    fontSize: '13px',
-    color: '#64748b',
-    marginBottom: '20px',
-  },
-  loadingContainer: {
-    textAlign: 'center',
-    padding: '60px',
-  },
-  spinner: {
-    width: '36px',
-    height: '36px',
-    border: '3px solid #334155',
-    borderTopColor: '#38bdf8',
-    borderRadius: '50%',
-    margin: '0 auto',
-    animation: 'spin 1s linear infinite',
-  },
-  overlay: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 1000,
-    backdropFilter: 'blur(3px)',
-  },
-  modal: {
-    backgroundColor: '#1e293b',
-    border: '1px solid #334155',
-    borderRadius: '12px',
-    width: '90%',
+  modalBox: {
+    width: '100%',
     maxWidth: '560px',
-    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)',
-    overflow: 'hidden',
+    padding: '24px',
   },
   modalHeader: {
     display: 'flex',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    padding: '16px 20px',
-    borderBottom: '1px solid #334155',
+    justifyContent: 'space-between',
+    marginBottom: '18px',
+    paddingBottom: '12px',
+    borderBottom: '1px solid var(--glass-border-subtle)',
   },
   modalTitle: {
+    fontSize: '1.125rem',
+    fontWeight: '700',
+    color: 'var(--text-primary)',
     margin: 0,
-    fontSize: '18px',
-    fontWeight: '600',
-    color: '#f8fafc',
   },
-  closeBtn: {
-    background: 'none',
-    border: 'none',
-    color: '#94a3b8',
-    fontSize: '18px',
-    cursor: 'pointer',
+  modalError: {
+    padding: '10px 14px',
+    borderRadius: 'var(--radius-md)',
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    color: 'var(--danger)',
+    fontSize: '0.8125rem',
+    marginBottom: '14px',
   },
   modalForm: {
-    padding: '20px',
     display: 'flex',
     flexDirection: 'column',
-    gap: '16px',
+    gap: '14px',
   },
-  errorAlert: {
-    backgroundColor: '#7f1d1d',
-    color: '#fecaca',
-    padding: '8px 12px',
-    borderRadius: '6px',
-    fontSize: '13px',
-  },
-  formGroup: {
+  modalField: {
     display: 'flex',
     flexDirection: 'column',
     gap: '6px',
   },
-  formRow: {
-    display: 'flex',
-    gap: '12px',
-  },
-  formLabel: {
-    fontSize: '12px',
-    fontWeight: '500',
-    color: '#94a3b8',
-    textTransform: 'uppercase',
-    letterSpacing: '0.05em',
-  },
-  formInput: {
-    backgroundColor: '#0f172a',
-    border: '1px solid #334155',
-    borderRadius: '6px',
-    padding: '8px 12px',
-    color: '#f8fafc',
-    fontSize: '14px',
-    outline: 'none',
-  },
-  formTextarea: {
-    backgroundColor: '#0f172a',
-    border: '1px solid #334155',
-    borderRadius: '6px',
-    padding: '10px 12px',
-    color: '#f8fafc',
-    fontSize: '13px',
-    fontFamily: '"SF Mono", Monaco, Menlo, Consolas, monospace',
-    outline: 'none',
-    resize: 'vertical',
+  modalLabel: {
+    fontSize: '0.8125rem',
+    fontWeight: '600',
+    color: 'var(--text-primary)',
   },
   modalActions: {
     display: 'flex',
     justifyContent: 'flex-end',
     gap: '10px',
-    marginTop: '6px',
-  },
-  cancelBtn: {
-    padding: '8px 16px',
-    backgroundColor: 'transparent',
-    color: '#94a3b8',
-    border: '1px solid #334155',
-    borderRadius: '6px',
-    fontSize: '13px',
-    cursor: 'pointer',
-  },
-  saveBtn: {
-    padding: '8px 18px',
-    backgroundColor: '#0284c7',
-    color: '#ffffff',
-    border: 'none',
-    borderRadius: '6px',
-    fontSize: '13px',
-    fontWeight: '500',
-    cursor: 'pointer',
+    marginTop: '8px',
+    paddingTop: '14px',
+    borderTop: '1px solid var(--glass-border-subtle)',
   },
 };
-

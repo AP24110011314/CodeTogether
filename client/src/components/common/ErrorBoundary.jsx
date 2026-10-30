@@ -1,4 +1,5 @@
 import React from 'react';
+import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 
 export class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -26,11 +27,18 @@ export class ErrorBoundary extends React.Component {
     if (this.state.hasError) {
       return (
         <div style={styles.container}>
-          <div style={styles.card}>
-            <div style={styles.icon}>⚠️</div>
+          <div className="glass-strong" style={styles.card}>
+            <div className="mac-traffic-lights" style={{ marginBottom: '16px' }}>
+              <span className="mac-dot mac-dot-close" />
+              <span className="mac-dot mac-dot-min" />
+              <span className="mac-dot mac-dot-max" />
+            </div>
+            <div style={styles.iconBox}>
+              <AlertTriangle size={32} style={{ color: 'var(--danger)' }} />
+            </div>
             <h1 style={styles.title}>Something went wrong</h1>
             <p style={styles.message}>
-              An unexpected error occurred in the application. Don't worry, your work is saved on the server.
+              An unexpected interface error occurred. Don't worry, your collaborative documents and code are persisted on the server.
             </p>
             {this.state.error?.message && (
               <pre style={styles.errorText}>
@@ -38,11 +46,13 @@ export class ErrorBoundary extends React.Component {
               </pre>
             )}
             <div style={styles.buttonGroup}>
-              <button onClick={this.handleReload} style={styles.primaryButton}>
-                Reload Page
+              <button onClick={this.handleReload} className="btn btn-primary" style={{ gap: '6px' }}>
+                <RefreshCw size={15} />
+                <span>Reload Application</span>
               </button>
-              <button onClick={this.handleGoHome} style={styles.secondaryButton}>
-                Back to Dashboard
+              <button onClick={this.handleGoHome} className="btn btn-secondary" style={{ gap: '6px' }}>
+                <Home size={15} />
+                <span>Return to Dashboard</span>
               </button>
             </div>
           </div>
@@ -60,71 +70,57 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#0f172a',
-    color: '#f8fafc',
-    padding: '20px',
+    padding: '24px',
   },
   card: {
-    maxWidth: '480px',
+    maxWidth: '500px',
     width: '100%',
-    backgroundColor: '#1e293b',
-    border: '1px solid #334155',
-    borderRadius: '12px',
-    padding: '32px',
+    padding: '36px',
+    borderRadius: 'var(--radius-xl)',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
     textAlign: 'center',
-    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)',
   },
-  icon: {
-    fontSize: '48px',
+  iconBox: {
+    width: '56px',
+    height: '56px',
+    borderRadius: '50%',
+    backgroundColor: 'rgba(239, 68, 68, 0.12)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: '16px',
   },
   title: {
-    fontSize: '22px',
+    fontSize: '1.25rem',
     fontWeight: '700',
-    marginBottom: '12px',
+    color: 'var(--text-primary)',
+    marginBottom: '8px',
   },
   message: {
-    color: '#94a3b8',
-    fontSize: '14px',
-    lineHeight: 1.5,
-    marginBottom: '16px',
+    fontSize: '0.875rem',
+    color: 'var(--text-secondary)',
+    marginBottom: '18px',
+    lineHeight: '1.5',
   },
   errorText: {
+    width: '100%',
+    padding: '10px 14px',
+    borderRadius: 'var(--radius-md)',
+    backgroundColor: 'var(--editor-bg)',
+    border: '1px solid var(--editor-border)',
+    color: 'var(--danger)',
+    fontSize: '0.75rem',
+    fontFamily: 'var(--font-mono)',
     textAlign: 'left',
-    backgroundColor: '#090d16',
-    border: '1px solid #7f1d1d',
-    color: '#fca5a5',
-    padding: '12px',
-    borderRadius: '6px',
-    fontSize: '12px',
-    fontFamily: 'monospace',
-    overflowX: 'auto',
     marginBottom: '24px',
+    overflowX: 'auto',
   },
   buttonGroup: {
     display: 'flex',
-    justifyContent: 'center',
     gap: '12px',
-  },
-  primaryButton: {
-    backgroundColor: '#0284c7',
-    color: '#ffffff',
-    border: 'none',
-    borderRadius: '6px',
-    padding: '10px 18px',
-    fontWeight: '600',
-    fontSize: '14px',
-    cursor: 'pointer',
-  },
-  secondaryButton: {
-    backgroundColor: '#334155',
-    color: '#cbd5e1',
-    border: 'none',
-    borderRadius: '6px',
-    padding: '10px 18px',
-    fontWeight: '500',
-    fontSize: '14px',
-    cursor: 'pointer',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
   },
 };
-

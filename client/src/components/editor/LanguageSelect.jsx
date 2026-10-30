@@ -26,7 +26,14 @@ export function LanguageSelect({ value, onChange, disabled }) {
       value={value}
       onChange={(e) => onChange(e.target.value)}
       disabled={disabled}
-      style={styles.select}
+      className="input-glass"
+      style={{
+        padding: '5px 10px',
+        fontSize: '0.8125rem',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        height: '32px',
+        width: 'auto',
+      }}
     >
       {SUPPORTED_LANGUAGES.map((lang) => {
         const isSupportedByRunner = ['javascript', 'python', 'typescript', 'c', 'cpp', 'java', 'go'].includes(lang.id);
@@ -34,7 +41,7 @@ export function LanguageSelect({ value, onChange, disabled }) {
         const suffix = isSupportedByRunner && !hasHostRunner ? ' (No runtime)' : '';
 
         return (
-          <option key={lang.id} value={lang.id}>
+          <option key={lang.id} value={lang.id} style={{ background: 'var(--bg-base)', color: 'var(--text-primary)' }}>
             {lang.label}{suffix}
           </option>
         );
@@ -42,17 +49,3 @@ export function LanguageSelect({ value, onChange, disabled }) {
     </select>
   );
 }
-
-const styles = {
-  select: {
-    backgroundColor: '#0f172a',
-    color: '#f8fafc',
-    border: '1px solid #475569',
-    borderRadius: '6px',
-    padding: '6px 10px',
-    fontSize: '13px',
-    outline: 'none',
-    cursor: 'pointer',
-  },
-};
-

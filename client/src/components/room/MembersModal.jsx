@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useRoomStore } from '../../store/roomStore.js';
 import { useAuthStore } from '../../store/authStore.js';
 import { updateMemberRoleApi, removeMemberApi, deleteRoomApi } from '../../api/rooms.js';
+import { Users, UserMinus, Trash2, LogOut, X, Shield, Loader2 } from 'lucide-react';
 
 export function MembersModal({ isOpen, onClose }) {
   const navigate = useNavigate();
@@ -16,7 +17,6 @@ export function MembersModal({ isOpen, onClose }) {
   const isOwner = role === 'owner';
   const currentUserId = user?.id || user?._id;
 
-  // Merge room.members (from DB) with storeMembers (which has live online status)
   const onlineStatusMap = new Map();
   if (Array.isArray(storeMembers)) {
     storeMembers.forEach((m) => {
@@ -67,34 +67,24 @@ export function MembersModal({ isOpen, onClose }) {
   };
 
   const handleLeaveRoom = async () => {
-    if (!window.confirm('Are you sure you want to leave this room?')) {
+    if (!window.confirm('Are you sure you want to leave this workspace?')) {
       return;
     }
-    setLoadingMemberId(currentUserId);
     try {
       await removeMemberApi(room.id, currentUserId);
-      onClose();
       navigate('/');
     } catch (err) {
       alert(err.response?.data?.error?.message || 'Failed to leave room');
-    } finally {
-      setLoadingMemberId(null);
     }
   };
 
   const handleDeleteRoom = async () => {
-    const confirmName = window.prompt(
-      `Warning: Deleting this room will permanently delete all associated documents, chat messages, and execution runs.\n\nType "${room.name}" to confirm:`
-    );
-    if (confirmName !== room.name) {
-      if (confirmName !== null) alert('Room name did not match. Deletion cancelled.');
+    if (!window.confirm('DANGER: Deleting this workspace is irreversible. All code, documents, chat messages, and run history will be permanently destroyed. Continue?')) {
       return;
     }
-
     setIsDeleting(true);
     try {
       await deleteRoomApi(room.id);
-      onClose();
       navigate('/');
     } catch (err) {
       alert(err.response?.data?.error?.message || 'Failed to delete room');
@@ -103,76 +93,119 @@ export function MembersModal({ isOpen, onClose }) {
   };
 
   return (
-    <div style={styles.overlay} onClick={onClose}>
-      <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+    <div className="modal-backdrop" onClick={onClose} role="dialog" aria-modal="true">
+      <div
+        className="glass-strong modal-content"
+        onClick={(e) => e.stopPropagation()}
+        style={styles.modalBox}
+      >
         <div style={styles.header}>
-          <h2 style={styles.title}>Room Members ({memberList.length})</h2>
-          <button onClick={onClose} style={styles.closeButton}>
-            ✕
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div className="mac-traffic-lights">
+              <span className="mac-dot mac-dot-close" onClick={onClose} style={{ cursor: 'pointer' }} />
+              <span className="mac-dot mac-dot-min" />
+              <span className="mac-dot mac-dot-max" />
+            </div>
+            <h3 style={styles.title}>Workspace Members & Permissions</h3>
+          </div>
+          <button onClick={onClose} className="btn-ghost" style={{ padding: '6px' }} aria-label="Close modal">
+            <X size={18} />
           </button>
         </div>
 
-        <div style={styles.memberList}>
-          {memberList.map((member, idx) => {
-            const userObj = member.userId && typeof member.userId === 'object' ? member.userId : null;
-            const memberId = userObj?._id || userObj?.id || member.userId;
-            const memberIdStr = memberId ? memberId.toString() : '';
-            const name = userObj?.name || 'Member';
-            const email = userObj?.email || '';
-            const color = userObj?.avatarColor || '#38bdf8';
-            const isMemberOwner = member.role === 'owner';
-            const isOnline = onlineStatusMap.has(memberIdStr) ? onlineStatusMap.get(memberIdStr) : false;
-            const isCurrent = currentUserId && memberIdStr === currentUserId.toString();
+        <div style={styles.list}>
+          {memberList.map((m) => {
+            const memberUser = m.userId;
+            const memberId = memberUser?._id || memberUser?.id || memberUser;
+            const memberName = memberUser?.name || 'User';
+            const memberEmail = memberUser?.email || '';
+            const isSelf = memberId?.toString() === currentUserId?.toString();
+            const isThisMemberOwner = m.role === 'owner';
+            const isOnline = onlineStatusMap.get(memberId?.toString()) ?? false;
+            const isLoadingThis = loadingMemberId === memberId;
 
             return (
-              <div key={memberIdStr || idx} style={styles.memberItem}>
-                <div style={styles.memberInfo}>
-                  <div style={styles.avatarWrapper}>
-                    <div style={{ ...styles.avatar, backgroundColor: color }}>
-                      {name[0]?.toUpperCase() || 'U'}
+              <div key={memberId} className="glass-subtle" style={styles.memberRow}>
+                <div style={styles.memberLeft}>
+                  <div style={styles.avatarContainer}>
+                    <div
+                      style={{
+                        ...styles.avatar,
+                        backgroundColor: memberUser?.avatarColor || 'var(--primary)',
+                      }}
+                    >
+                      {memberName[0].toUpperCase()}
                     </div>
-                    <span
+                    <div
                       style={{
                         ...styles.statusDot,
-                        backgroundColor: isOnline ? '#22c55e' : '#64748b',
+                        backgroundColor: isOnline ? 'var(--success)' : 'var(--text-muted)',
                       }}
                       title={isOnline ? 'Online' : 'Offline'}
                     />
                   </div>
-                  <div>
-                    <div style={styles.nameRow}>
-                      <span style={styles.memberName}>{name}</span>
-                      {isCurrent && <span style={styles.youBadge}>You</span>}
-                      {isMemberOwner && <span style={styles.ownerBadge}>Owner</span>}
-                      <span style={styles.onlineText}>{isOnline ? 'Online' : 'Offline'}</span>
+
+                  <div style={styles.nameMeta}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={styles.memberName}>{memberName}</span>
+                      {isSelf && (
+                        <span className="badge-glass badge-primary" style={{ fontSize: '0.625rem' }}>
+                          You
+                        </span>
+                      )}
                     </div>
-                    {email && <div style={styles.memberEmail}>{email}</div>}
+                    <span style={styles.memberEmail}>{memberEmail}</span>
                   </div>
                 </div>
 
-                <div style={styles.controls}>
-                  {isOwner && !isMemberOwner ? (
-                    <>
-                      <select
-                        value={member.role}
-                        onChange={(e) => handleRoleChange(memberIdStr, e.target.value)}
-                        disabled={loadingMemberId === memberIdStr}
-                        style={styles.roleSelect}
-                      >
-                        <option value="editor">Editor</option>
-                        <option value="viewer">Viewer</option>
-                      </select>
-                      <button
-                        onClick={() => handleKick(memberIdStr, name)}
-                        disabled={loadingMemberId === memberIdStr}
-                        style={styles.kickButton}
-                        title="Remove member from room"
-                      >
-                        Kick
-                      </button>
-                    </>
+                <div style={styles.memberRight}>
+                  {/* Role Control */}
+                  {isOwner && !isThisMemberOwner ? (
+                    <select
+                      value={m.role}
+                      onChange={(e) => handleRoleChange(memberId, e.target.value)}
+                      disabled={isLoadingThis}
+                      className="input-glass"
+                      style={styles.roleSelect}
+                    >
+                      <option value="editor" style={{ background: 'var(--bg-base)' }}>Editor</option>
+                      <option value="viewer" style={{ background: 'var(--bg-base)' }}>Viewer</option>
+                    </select>
                   ) : (
-                    <span style={styles.roleLabel}>{member.role}</span>
+                    <span
+                      className="badge-glass"
+                      style={{
+                        backgroundColor:
+                          m.role === 'owner'
+                            ? 'rgba(124, 147, 255, 0.15)'
+                            : m.role === 'editor'
+                            ? 'rgba(45, 212, 191, 0.15)'
+                            : 'rgba(100, 116, 139, 0.15)',
+                        color:
+                          m.role === 'owner'
+                            ? 'var(--primary)'
+                            : m.role === 'editor'
+                            ? 'var(--secondary)'
+                            : 'var(--text-muted)',
+                        textTransform: 'uppercase',
+                        fontSize: '0.6875rem',
+                      }}
+                    >
+                      {m.role}
+                    </span>
+                  )}
+
+                  {/* Kick action */}
+                  {isOwner && !isThisMemberOwner && (
+                    <button
+                      onClick={() => handleKick(memberId, memberName)}
+                      disabled={isLoadingThis}
+                      className="btn btn-ghost"
+                      style={styles.kickBtn}
+                      title={`Remove ${memberName} from room`}
+                    >
+                      <UserMinus size={15} />
+                    </button>
                   )}
                 </div>
               </div>
@@ -180,22 +213,33 @@ export function MembersModal({ isOpen, onClose }) {
           })}
         </div>
 
-        {/* Footer actions: Leave Room (for non-owners) or Delete Room (for owner) */}
+        {/* Footer Actions */}
         <div style={styles.footer}>
-          {isOwner ? (
+          {!isOwner && (
+            <button onClick={handleLeaveRoom} className="btn btn-secondary" style={{ gap: '6px' }}>
+              <LogOut size={15} />
+              <span>Leave Workspace</span>
+            </button>
+          )}
+
+          {isOwner && (
             <button
               onClick={handleDeleteRoom}
               disabled={isDeleting}
-              style={styles.deleteRoomButton}
+              className="btn btn-danger"
+              style={{ gap: '6px' }}
             >
-              {isDeleting ? 'Deleting room...' : '🗑 Delete Room'}
-            </button>
-          ) : (
-            <button
-              onClick={handleLeaveRoom}
-              style={styles.leaveButton}
-            >
-              Leave Room
+              {isDeleting ? (
+                <>
+                  <Loader2 size={15} className="spinner" style={{ animation: 'spin 1s linear infinite' }} />
+                  <span>Deleting...</span>
+                </>
+              ) : (
+                <>
+                  <Trash2 size={15} />
+                  <span>Delete Workspace</span>
+                </>
+              )}
             </button>
           )}
         </div>
@@ -205,186 +249,102 @@ export function MembersModal({ isOpen, onClose }) {
 }
 
 const styles = {
-  overlay: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 1000,
-    backdropFilter: 'blur(2px)',
-  },
-  modal: {
+  modalBox: {
     width: '100%',
-    maxWidth: '540px',
-    backgroundColor: '#1e293b',
-    borderRadius: '12px',
-    border: '1px solid #334155',
+    maxWidth: '560px',
     padding: '24px',
-    color: '#f8fafc',
-    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)',
   },
   header: {
     display: 'flex',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: '16px',
+    justifyContent: 'space-between',
+    marginBottom: '20px',
+    paddingBottom: '12px',
+    borderBottom: '1px solid var(--glass-border-subtle)',
   },
   title: {
-    fontSize: '18px',
+    fontSize: '1.125rem',
     fontWeight: '700',
+    color: 'var(--text-primary)',
     margin: 0,
   },
-  closeButton: {
-    background: 'none',
-    border: 'none',
-    color: '#94a3b8',
-    fontSize: '18px',
-    cursor: 'pointer',
-    padding: '4px',
-  },
-  memberList: {
+  list: {
     display: 'flex',
     flexDirection: 'column',
     gap: '10px',
-    maxHeight: '340px',
+    maxHeight: '380px',
     overflowY: 'auto',
-    paddingRight: '4px',
+    marginBottom: '20px',
   },
-  memberItem: {
+  memberRow: {
     display: 'flex',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#0f172a',
-    borderRadius: '8px',
+    justifyContent: 'space-between',
     padding: '10px 14px',
-    border: '1px solid #334155',
+    borderRadius: 'var(--radius-md)',
   },
-  memberInfo: {
+  memberLeft: {
     display: 'flex',
     alignItems: 'center',
     gap: '12px',
   },
-  avatarWrapper: {
+  avatarContainer: {
     position: 'relative',
-    display: 'inline-block',
   },
   avatar: {
-    width: '36px',
-    height: '36px',
+    width: '32px',
+    height: '32px',
     borderRadius: '50%',
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontSize: '0.8125rem',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    color: '#ffffff',
-    fontWeight: 'bold',
-    fontSize: '14px',
   },
   statusDot: {
     position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: '10px',
-    height: '10px',
+    bottom: '-1px',
+    right: '-1px',
+    width: '9px',
+    height: '9px',
     borderRadius: '50%',
-    border: '2px solid #0f172a',
+    border: '2px solid var(--bg-base)',
   },
-  nameRow: {
+  nameMeta: {
     display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
+    flexDirection: 'column',
   },
   memberName: {
-    fontSize: '14px',
+    fontSize: '0.875rem',
     fontWeight: '600',
-    color: '#f8fafc',
-  },
-  youBadge: {
-    fontSize: '10px',
-    backgroundColor: '#0284c7',
-    color: '#ffffff',
-    padding: '1px 6px',
-    borderRadius: '4px',
-    fontWeight: '600',
-  },
-  ownerBadge: {
-    fontSize: '10px',
-    backgroundColor: '#3b82f6',
-    color: '#ffffff',
-    padding: '1px 6px',
-    borderRadius: '4px',
-    fontWeight: '600',
-  },
-  onlineText: {
-    fontSize: '11px',
-    color: '#64748b',
+    color: 'var(--text-primary)',
   },
   memberEmail: {
-    fontSize: '12px',
-    color: '#64748b',
-    marginTop: '2px',
+    fontSize: '0.6875rem',
+    color: 'var(--text-muted)',
   },
-  controls: {
+  memberRight: {
     display: 'flex',
     alignItems: 'center',
     gap: '8px',
   },
   roleSelect: {
-    backgroundColor: '#1e293b',
-    color: '#f8fafc',
-    border: '1px solid #475569',
-    borderRadius: '6px',
     padding: '4px 8px',
-    fontSize: '12px',
-    outline: 'none',
+    fontSize: '0.75rem',
+    height: '28px',
+    width: 'auto',
     cursor: 'pointer',
   },
-  kickButton: {
-    backgroundColor: 'rgba(239, 68, 68, 0.15)',
-    color: '#ef4444',
-    border: '1px solid rgba(239, 68, 68, 0.3)',
-    borderRadius: '6px',
-    padding: '4px 10px',
-    fontSize: '12px',
-    fontWeight: '600',
-    cursor: 'pointer',
-    transition: 'background-color 0.2s',
-  },
-  roleLabel: {
-    fontSize: '12px',
-    color: '#94a3b8',
-    textTransform: 'capitalize',
-    padding: '4px 8px',
+  kickBtn: {
+    padding: '6px',
+    color: 'var(--danger)',
+    borderRadius: 'var(--radius-sm)',
   },
   footer: {
-    marginTop: '16px',
-    paddingTop: '16px',
-    borderTop: '1px solid #334155',
     display: 'flex',
     justifyContent: 'flex-end',
-  },
-  deleteRoomButton: {
-    backgroundColor: 'rgba(239, 68, 68, 0.2)',
-    color: '#ef4444',
-    border: '1px solid #ef4444',
-    borderRadius: '6px',
-    padding: '6px 14px',
-    fontSize: '13px',
-    fontWeight: '600',
-    cursor: 'pointer',
-  },
-  leaveButton: {
-    backgroundColor: '#334155',
-    color: '#f8fafc',
-    border: 'none',
-    borderRadius: '6px',
-    padding: '6px 14px',
-    fontSize: '13px',
-    fontWeight: '500',
-    cursor: 'pointer',
+    paddingTop: '16px',
+    borderTop: '1px solid var(--glass-border-subtle)',
   },
 };

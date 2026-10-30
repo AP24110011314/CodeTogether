@@ -1,8 +1,24 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState, useMemo } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore.js';
 import { getRoomsApi, deleteRoomApi } from '../api/rooms.js';
 import { CreateRoomModal } from '../components/room/CreateRoomModal.jsx';
+import { ThemeToggle } from '../components/common/ThemeToggle.jsx';
+import {
+  Code2,
+  Plus,
+  Search,
+  Users,
+  Clock,
+  Trash2,
+  Bookmark,
+  Sparkles,
+  LogOut,
+  FolderCode,
+  Globe,
+  Lock,
+  Compass,
+} from 'lucide-react';
 
 export default function Dashboard() {
   const { user, logout } = useAuthStore();
@@ -10,6 +26,7 @@ export default function Dashboard() {
 
   const [activeTab, setActiveTab] = useState('mine'); // 'mine' | 'joined'
   const [rooms, setRooms] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [error, setError] = useState('');
@@ -38,161 +55,268 @@ export default function Dashboard() {
 
   const handleDeleteRoom = async (e, roomId) => {
     e.stopPropagation();
-    if (!window.confirm('Are you sure you want to delete this room? This cannot be undone.')) {
+    if (!window.confirm('Are you sure you want to delete this workspace? This cannot be undone.')) {
       return;
     }
     try {
       await deleteRoomApi(roomId);
-      setRooms(rooms.filter((r) => r.id !== roomId && r._id !== roomId));
+      setRooms((prev) => prev.filter((r) => r.id !== roomId && r._id !== roomId));
     } catch (err) {
       alert(err.response?.data?.error?.message || 'Failed to delete room');
     }
   };
 
+  const filteredRooms = useMemo(() => {
+    if (!searchQuery.trim()) return rooms;
+    const q = searchQuery.toLowerCase();
+    return rooms.filter(
+      (r) =>
+        r.name?.toLowerCase().includes(q) ||
+        r.language?.toLowerCase().includes(q) ||
+        r.slug?.toLowerCase().includes(q)
+    );
+  }, [rooms, searchQuery]);
+
   return (
     <div style={styles.container}>
-      <header style={styles.header}>
-        <div style={styles.brand}>
-          <span style={styles.logo}>&lt;/&gt;</span>
-          <span style={styles.brandTitle}>CodeTogether</span>
+      {/* macOS Translucent Top Navigation Bar */}
+      <header className="glass" style={styles.navBar}>
+        <div style={styles.navLeft}>
+          <div style={styles.logoBadge}>
+            <Code2 size={20} style={{ color: '#FFFFFF' }} />
+          </div>
+          <div>
+            <span style={styles.brandTitle}>CodeTogether</span>
+            <span className="badge-glass badge-primary" style={{ marginLeft: '8px', fontSize: '0.6875rem' }}>
+              Labs
+            </span>
+          </div>
+
+          <nav style={styles.navLinks}>
+            <span style={{ ...styles.navLink, color: 'var(--primary)', fontWeight: '600' }}>
+              Workspaces
+            </span>
+            <Link to="/snippets" style={styles.navLink}>
+              <Bookmark size={15} />
+              <span>Snippets</span>
+            </Link>
+          </nav>
         </div>
-        <div style={styles.userSection}>
-          <div
-            style={{
-              ...styles.avatar,
-              backgroundColor: user?.avatarColor || '#38bdf8',
-            }}
-          >
-            {user?.name ? user.name[0].toUpperCase() : 'U'}
+
+        <div style={styles.navRight}>
+          <ThemeToggle />
+
+          <div style={styles.userProfile}>
+            <div
+              style={{
+                ...styles.avatar,
+                backgroundColor: user?.avatarColor || 'var(--primary)',
+              }}
+            >
+              {user?.name ? user.name[0].toUpperCase() : 'U'}
+            </div>
+            <div style={styles.userMeta}>
+              <span style={styles.userName}>{user?.name}</span>
+              <span style={styles.userEmail}>{user?.email}</span>
+            </div>
+            <button onClick={logout} className="btn btn-ghost" style={styles.logoutBtn} title="Sign Out">
+              <LogOut size={16} />
+            </button>
           </div>
-          <div style={styles.userInfo}>
-            <span style={styles.userName}>{user?.name}</span>
-            <span style={styles.userEmail}>{user?.email}</span>
-          </div>
-          <button onClick={logout} style={styles.logoutButton}>
-            Log Out
-          </button>
         </div>
       </header>
 
+      {/* Main Content Area */}
       <main style={styles.main}>
-        <div style={styles.actionBar}>
-          <div style={styles.tabs}>
+        {/* Welcome Greeting Banner */}
+        <section className="glass-strong" style={styles.greetingCard}>
+          <div style={styles.greetingContent}>
+            <div style={styles.greetingPill}>
+              <Sparkles size={14} style={{ color: 'var(--accent)' }} />
+              <span>Collaborative Learning Suite</span>
+            </div>
+            <h1 style={styles.greetingTitle}>
+              Welcome back, <span style={styles.nameHighlight}>{user?.name || 'Engineer'}</span>
+            </h1>
+            <p style={styles.greetingSubtitle}>
+              Dive into real-time collaborative coding, test algorithms with isolated sandboxes, or spin up an interactive classroom.
+            </p>
+          </div>
+
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="btn btn-primary"
+            style={styles.createMainBtn}
+          >
+            <Plus size={18} />
+            <span>New Workspace</span>
+          </button>
+        </section>
+
+        {/* Action & Filter Toolbar */}
+        <div style={styles.toolbar}>
+          {/* Tabs */}
+          <div className="glass-subtle" style={styles.tabsWrapper}>
             <button
               onClick={() => setActiveTab('mine')}
               style={{
-                ...styles.tabButton,
-                ...(activeTab === 'mine' ? styles.activeTab : {}),
+                ...styles.tabBtn,
+                ...(activeTab === 'mine' ? styles.tabBtnActive : {}),
               }}
             >
-              My Rooms
+              My Workspaces ({activeTab === 'mine' ? rooms.length : '•'})
             </button>
             <button
               onClick={() => setActiveTab('joined')}
               style={{
-                ...styles.tabButton,
-                ...(activeTab === 'joined' ? styles.activeTab : {}),
+                ...styles.tabBtn,
+                ...(activeTab === 'joined' ? styles.tabBtnActive : {}),
               }}
             >
-              Joined Rooms
+              Joined Classrooms ({activeTab === 'joined' ? rooms.length : '•'})
             </button>
           </div>
 
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button
-              onClick={() => navigate('/snippets')}
-              style={styles.snippetsButton}
-            >
-              📑 Saved Snippets
-            </button>
-            <button onClick={() => setIsModalOpen(true)} style={styles.createButton}>
-              + Create Room
-            </button>
+          {/* Search Bar */}
+          <div style={styles.searchWrapper}>
+            <Search size={16} style={styles.searchIcon} />
+            <input
+              type="text"
+              className="input-glass"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search workspaces by title or language..."
+              style={{ paddingLeft: '38px', maxWidth: '320px' }}
+            />
           </div>
         </div>
 
-        {error && <div style={styles.errorBox}>{error}</div>}
+        {error && (
+          <div role="alert" style={styles.errorBanner}>
+            {error}
+          </div>
+        )}
 
+        {/* Workspaces Grid */}
         {isLoading ? (
-          <div style={styles.roomGrid}>
-            {[1, 2, 3].map((i) => (
-              <div key={i} style={styles.skeletonCard}>
+          <div style={styles.grid}>
+            {[1, 2, 3, 4, 5, 6].map((idx) => (
+              <div key={idx} className="glass" style={styles.skeletonCard}>
                 <div style={styles.skeletonHeader} />
                 <div style={styles.skeletonLine} />
                 <div style={styles.skeletonLineShort} />
               </div>
             ))}
           </div>
-        ) : rooms.length === 0 ? (
-          <div style={styles.emptyState}>
-            <div style={styles.emptyIcon}>📂</div>
+        ) : filteredRooms.length === 0 ? (
+          <div className="glass" style={styles.emptyContainer}>
+            <div style={styles.emptyIconBox}>
+              <FolderCode size={36} style={{ color: 'var(--primary)' }} />
+            </div>
             <h3 style={styles.emptyTitle}>
-              {activeTab === 'mine' ? 'No rooms created yet' : 'No joined rooms'}
+              {searchQuery
+                ? 'No matching workspaces found'
+                : activeTab === 'mine'
+                ? 'No workspaces created yet'
+                : 'No joined classrooms yet'}
             </h3>
             <p style={styles.emptySubtitle}>
-              {activeTab === 'mine'
-                ? 'Create your first collaborative room to share code and run live programs with your team.'
-                : 'Join a room via an invite link shared with you.'}
+              {searchQuery
+                ? 'Try adjusting your search terms or create a fresh workspace.'
+                : activeTab === 'mine'
+                ? 'Create your first collaborative canvas to write, run, and learn algorithms with classmates.'
+                : 'When educators or peers invite you to a room, it will appear right here.'}
             </p>
             {activeTab === 'mine' && (
-              <button onClick={() => setIsModalOpen(true)} style={styles.emptyCreateButton}>
-                Create Your First Room
+              <button onClick={() => setIsModalOpen(true)} className="btn btn-primary" style={{ marginTop: '12px' }}>
+                <Plus size={16} />
+                <span>Create Workspace</span>
               </button>
             )}
           </div>
         ) : (
-          <div style={styles.roomGrid}>
-            {rooms.map((room) => {
-              const isOwner =
-                (room.ownerId?._id || room.ownerId?.id || room.ownerId) === user?.id;
+          <div style={styles.grid}>
+            {filteredRooms.map((room) => {
+              const isOwner = (room.ownerId?._id || room.ownerId?.id || room.ownerId) === user?.id;
+              const memberCount = room.members?.length || 1;
 
               return (
                 <div
                   key={room.id || room._id}
-                  style={styles.roomCard}
                   onClick={() => navigate(`/room/${room.slug}`)}
+                  className="glass glass-hover"
+                  style={styles.roomCard}
                 >
-                  <div style={styles.cardHeader}>
-                    <h3 style={styles.cardTitle}>{room.name}</h3>
-                    <div style={styles.cardBadges}>
-                      <span style={styles.langBadge}>{room.language}</span>
+                  {/* macOS Card Top Header */}
+                  <div style={styles.cardTop}>
+                    <div className="mac-traffic-lights">
+                      <span className="mac-dot mac-dot-close" />
+                      <span className="mac-dot mac-dot-min" />
+                      <span className="mac-dot mac-dot-max" />
+                    </div>
+                    <div style={styles.badgesRow}>
+                      <span className="badge-glass badge-primary" style={{ textTransform: 'capitalize' }}>
+                        {room.language}
+                      </span>
                       <span
+                        className="badge-glass"
                         style={{
-                          ...styles.visBadge,
                           backgroundColor:
-                            room.visibility === 'private' ? '#854d0e' : '#1e3a8a',
-                          color:
-                            room.visibility === 'private' ? '#fef08a' : '#93c5fd',
+                            room.visibility === 'private'
+                              ? 'rgba(245, 158, 11, 0.12)'
+                              : 'rgba(20, 184, 166, 0.12)',
+                          color: room.visibility === 'private' ? 'var(--accent)' : 'var(--secondary)',
+                          borderColor:
+                            room.visibility === 'private'
+                              ? 'rgba(245, 158, 11, 0.3)'
+                              : 'rgba(20, 184, 166, 0.3)',
                         }}
                       >
-                        {room.visibility}
+                        {room.visibility === 'private' ? (
+                          <>
+                            <Lock size={11} /> Private
+                          </>
+                        ) : (
+                          <>
+                            <Globe size={11} /> Public
+                          </>
+                        )}
                       </span>
                     </div>
                   </div>
 
-                  <p style={styles.cardSlug}>/room/{room.slug}</p>
+                  {/* Title & Slug */}
+                  <div style={styles.cardBody}>
+                    <h3 style={styles.roomName} title={room.name}>
+                      {room.name}
+                    </h3>
+                    <span style={styles.roomSlug}>/room/{room.slug}</span>
+                  </div>
 
+                  {/* Footer Meta */}
                   <div style={styles.cardFooter}>
-                    <span style={styles.membersCount}>
-                      👥 {room.members?.length || 1} member{room.members?.length !== 1 ? 's' : ''}
-                    </span>
-                    <div style={styles.cardActions}>
-                      {isOwner && (
-                        <button
-                          onClick={(e) => handleDeleteRoom(e, room.id || room._id)}
-                          style={styles.deleteButton}
-                          title="Delete room"
-                        >
-                          Delete
-                        </button>
-                      )}
-                      <button
-                        onClick={() => navigate(`/room/${room.slug}`)}
-                        style={styles.openButton}
-                      >
-                        Open &rarr;
-                      </button>
+                    <div style={styles.footerLeft}>
+                      <div style={styles.metaItem}>
+                        <Users size={14} style={{ color: 'var(--text-muted)' }} />
+                        <span>{memberCount} participant{memberCount !== 1 ? 's' : ''}</span>
+                      </div>
+                      <div style={styles.metaItem}>
+                        <Clock size={14} style={{ color: 'var(--text-muted)' }} />
+                        <span>{new Date(room.updatedAt || room.createdAt).toLocaleDateString()}</span>
+                      </div>
                     </div>
+
+                    {isOwner && (
+                      <button
+                        onClick={(e) => handleDeleteRoom(e, room.id || room._id)}
+                        className="btn-ghost"
+                        style={styles.deleteBtn}
+                        title="Delete Workspace"
+                        aria-label="Delete room"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    )}
                   </div>
                 </div>
               );
@@ -201,6 +325,7 @@ export default function Dashboard() {
         )}
       </main>
 
+      {/* Create Room Modal */}
       <CreateRoomModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -213,297 +338,322 @@ export default function Dashboard() {
 const styles = {
   container: {
     minHeight: '100vh',
-    backgroundColor: '#0f172a',
-    color: '#f8fafc',
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-  },
-  header: {
     display: 'flex',
+    flexDirection: 'column',
+  },
+  navBar: {
+    margin: '16px 24px',
+    padding: '12px 24px',
+    display: 'flex',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '16px 32px',
-    backgroundColor: '#1e293b',
-    borderBottom: '1px solid #334155',
+    borderRadius: 'var(--radius-xl)',
+    position: 'sticky',
+    top: '16px',
+    zIndex: 100,
   },
-  brand: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
-  },
-  logo: {
-    fontSize: '20px',
-    fontWeight: '800',
-    color: '#38bdf8',
-  },
-  brandTitle: {
-    fontSize: '18px',
-    fontWeight: '700',
-    letterSpacing: '-0.5px',
-  },
-  userSection: {
+  navLeft: {
     display: 'flex',
     alignItems: 'center',
     gap: '14px',
   },
-  avatar: {
+  logoBadge: {
     width: '36px',
     height: '36px',
-    borderRadius: '50%',
+    borderRadius: '10px',
+    background: 'linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontWeight: '700',
-    color: '#ffffff',
-    fontSize: '16px',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+    boxShadow: '0 4px 10px rgba(var(--primary-rgb), 0.35)',
   },
-  userInfo: {
+  brandTitle: {
+    fontSize: '1.125rem',
+    fontWeight: '700',
+    color: 'var(--text-primary)',
+    letterSpacing: '-0.02em',
+  },
+  navLinks: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '20px',
+    marginLeft: '28px',
+  },
+  navLink: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    fontSize: '0.875rem',
+    color: 'var(--text-secondary)',
+    textDecoration: 'none',
+    transition: 'color var(--transition-fast)',
+  },
+  navRight: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '16px',
+  },
+  userProfile: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    paddingLeft: '14px',
+    borderLeft: '1px solid var(--glass-border-subtle)',
+  },
+  avatar: {
+    width: '32px',
+    height: '32px',
+    borderRadius: '50%',
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontSize: '0.8125rem',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  userMeta: {
     display: 'flex',
     flexDirection: 'column',
-    fontSize: '13px',
   },
   userName: {
+    fontSize: '0.8125rem',
     fontWeight: '600',
-    color: '#f1f5f9',
+    color: 'var(--text-primary)',
+    lineHeight: '1.2',
   },
   userEmail: {
-    color: '#94a3b8',
-    fontSize: '11px',
+    fontSize: '0.6875rem',
+    color: 'var(--text-muted)',
   },
-  logoutButton: {
-    padding: '7px 14px',
-    backgroundColor: '#334155',
-    color: '#f8fafc',
-    border: '1px solid #475569',
-    borderRadius: '6px',
+  logoutBtn: {
+    padding: '6px',
+    borderRadius: 'var(--radius-sm)',
+    color: 'var(--text-muted)',
     cursor: 'pointer',
-    fontSize: '12px',
-    fontWeight: '500',
   },
   main: {
-    maxWidth: '1100px',
-    margin: '32px auto',
-    padding: '0 24px',
+    maxWidth: '1200px',
+    width: '100%',
+    margin: '0 auto',
+    padding: '8px 24px 48px',
   },
-  actionBar: {
+  greetingCard: {
+    padding: '32px',
+    borderRadius: 'var(--radius-xl)',
     display: 'flex',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: '24px',
+    justifyContent: 'space-between',
+    marginBottom: '32px',
+    gap: '20px',
+    flexWrap: 'wrap',
   },
-  tabs: {
-    display: 'flex',
-    gap: '8px',
-    backgroundColor: '#1e293b',
-    padding: '4px',
-    borderRadius: '8px',
-    border: '1px solid #334155',
+  greetingContent: {
+    maxWidth: '680px',
   },
-  tabButton: {
-    padding: '8px 16px',
-    backgroundColor: 'transparent',
-    color: '#94a3b8',
-    border: 'none',
-    borderRadius: '6px',
-    fontSize: '13px',
+  greetingPill: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    fontSize: '0.75rem',
     fontWeight: '600',
-    cursor: 'pointer',
-    transition: 'all 0.2s',
+    color: 'var(--accent)',
+    marginBottom: '8px',
+    textTransform: 'uppercase',
+    letterSpacing: '0.05em',
   },
-  activeTab: {
-    backgroundColor: '#0284c7',
-    color: '#ffffff',
+  greetingTitle: {
+    fontSize: '1.875rem',
+    fontWeight: '800',
+    letterSpacing: '-0.03em',
+    color: 'var(--text-primary)',
+    marginBottom: '8px',
   },
-  snippetsButton: {
-    padding: '10px 16px',
-    backgroundColor: '#1e293b',
-    border: '1px solid #334155',
-    color: '#38bdf8',
-    borderRadius: '8px',
-    fontSize: '14px',
-    fontWeight: '500',
-    cursor: 'pointer',
-    transition: 'background-color 0.15s ease',
+  nameHighlight: {
+    background: 'linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
   },
-  createButton: {
-    padding: '10px 18px',
-    backgroundColor: '#0284c7',
-    color: '#ffffff',
-    border: 'none',
-    borderRadius: '8px',
-    fontSize: '14px',
-    fontWeight: '600',
-    cursor: 'pointer',
-    boxShadow: '0 4px 6px -1px rgba(2, 132, 199, 0.3)',
-  },
-  errorBox: {
-    padding: '12px 16px',
-    backgroundColor: '#451a1a',
-    border: '1px solid #ef4444',
-    color: '#fca5a5',
-    borderRadius: '8px',
-    marginBottom: '20px',
-    fontSize: '14px',
-  },
-  loadingState: {
-    textAlign: 'center',
-    padding: '60px 0',
-    color: '#94a3b8',
-    fontSize: '15px',
-  },
-  skeletonCard: {
-    backgroundColor: '#1e293b',
-    borderRadius: '12px',
-    border: '1px solid #334155',
-    padding: '20px',
-    height: '140px',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '12px',
-    opacity: 0.7,
-  },
-  skeletonHeader: {
-    height: '24px',
-    width: '60%',
-    backgroundColor: '#334155',
-    borderRadius: '4px',
-  },
-  skeletonLine: {
-    height: '16px',
-    width: '80%',
-    backgroundColor: '#273549',
-    borderRadius: '4px',
-  },
-  skeletonLineShort: {
-    height: '14px',
-    width: '40%',
-    backgroundColor: '#273549',
-    borderRadius: '4px',
-    marginTop: 'auto',
-  },
-  emptyState: {
-    textAlign: 'center',
-    padding: '64px 20px',
-    backgroundColor: '#1e293b',
-    borderRadius: '12px',
-    border: '1px solid #334155',
-  },
-  emptyIcon: {
-    fontSize: '48px',
-    marginBottom: '16px',
-  },
-  emptyTitle: {
-    fontSize: '18px',
-    fontWeight: '700',
-    color: '#f8fafc',
-    margin: '0 0 8px 0',
-  },
-  emptySubtitle: {
-    fontSize: '14px',
-    color: '#94a3b8',
-    maxWidth: '460px',
-    margin: '0 auto 24px auto',
+  greetingSubtitle: {
+    fontSize: '0.9375rem',
+    color: 'var(--text-secondary)',
     lineHeight: '1.5',
   },
-  emptyCreateButton: {
-    padding: '10px 20px',
-    backgroundColor: '#0284c7',
-    color: '#ffffff',
-    border: 'none',
-    borderRadius: '8px',
-    fontSize: '14px',
-    fontWeight: '600',
-    cursor: 'pointer',
+  createMainBtn: {
+    padding: '12px 20px',
+    fontSize: '0.9375rem',
+    borderRadius: 'var(--radius-md)',
   },
-  roomGrid: {
+  toolbar: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '16px',
+    marginBottom: '24px',
+    flexWrap: 'wrap',
+  },
+  tabsWrapper: {
+    display: 'inline-flex',
+    padding: '4px',
+    borderRadius: 'var(--radius-md)',
+    gap: '4px',
+  },
+  tabBtn: {
+    padding: '8px 16px',
+    borderRadius: 'var(--radius-sm)',
+    border: 'none',
+    background: 'transparent',
+    color: 'var(--text-secondary)',
+    fontSize: '0.875rem',
+    fontWeight: '500',
+    cursor: 'pointer',
+    transition: 'all var(--transition-fast)',
+  },
+  tabBtnActive: {
+    background: 'var(--glass-bg-strong)',
+    color: 'var(--primary)',
+    fontWeight: '600',
+    boxShadow: 'var(--glass-shadow)',
+  },
+  searchWrapper: {
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center',
+  },
+  searchIcon: {
+    position: 'absolute',
+    left: '12px',
+    color: 'var(--text-muted)',
+    pointerEvents: 'none',
+  },
+  errorBanner: {
+    padding: '12px 16px',
+    borderRadius: 'var(--radius-md)',
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    border: '1px solid rgba(239, 68, 68, 0.3)',
+    color: 'var(--danger)',
+    fontSize: '0.875rem',
+    marginBottom: '20px',
+  },
+  grid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
     gap: '20px',
   },
   roomCard: {
-    backgroundColor: '#1e293b',
-    border: '1px solid #334155',
-    borderRadius: '10px',
     padding: '20px',
+    borderRadius: 'var(--radius-lg)',
     cursor: 'pointer',
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'space-between',
-    transition: 'transform 0.15s, border-color 0.15s',
+    minHeight: '170px',
   },
-  cardHeader: {
+  cardTop: {
     display: 'flex',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: '12px',
-    marginBottom: '6px',
+    marginBottom: '14px',
   },
-  cardTitle: {
-    fontSize: '16px',
-    fontWeight: '700',
-    margin: 0,
-    color: '#f8fafc',
-  },
-  cardBadges: {
+  badgesRow: {
     display: 'flex',
+    alignItems: 'center',
     gap: '6px',
-    flexShrink: 0,
   },
-  langBadge: {
-    fontSize: '11px',
-    fontWeight: '600',
-    backgroundColor: '#334155',
-    color: '#38bdf8',
-    padding: '2px 6px',
-    borderRadius: '4px',
-    textTransform: 'uppercase',
+  cardBody: {
+    marginBottom: '16px',
   },
-  visBadge: {
-    fontSize: '11px',
-    fontWeight: '600',
-    padding: '2px 6px',
-    borderRadius: '4px',
-    textTransform: 'capitalize',
+  roomName: {
+    fontSize: '1.125rem',
+    fontWeight: '700',
+    color: 'var(--text-primary)',
+    marginBottom: '4px',
+    lineHeight: '1.3',
   },
-  cardSlug: {
-    fontSize: '12px',
-    color: '#64748b',
-    fontFamily: 'monospace',
-    margin: '0 0 16px 0',
+  roomSlug: {
+    fontSize: '0.75rem',
+    color: 'var(--text-muted)',
+    fontFamily: 'var(--font-mono)',
   },
   cardFooter: {
     display: 'flex',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingTop: '12px',
-    borderTop: '1px solid #334155',
+    borderTop: '1px solid var(--glass-border-subtle)',
   },
-  membersCount: {
-    fontSize: '12px',
-    color: '#94a3b8',
-  },
-  cardActions: {
+  footerLeft: {
     display: 'flex',
-    gap: '8px',
+    alignItems: 'center',
+    gap: '14px',
   },
-  deleteButton: {
-    padding: '5px 10px',
-    backgroundColor: '#451a1a',
-    color: '#f87171',
-    border: '1px solid #ef4444',
-    borderRadius: '5px',
-    fontSize: '11px',
-    fontWeight: '600',
-    cursor: 'pointer',
+  metaItem: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '5px',
+    fontSize: '0.75rem',
+    color: 'var(--text-secondary)',
   },
-  openButton: {
-    padding: '5px 12px',
-    backgroundColor: '#0284c7',
-    color: '#ffffff',
-    border: 'none',
-    borderRadius: '5px',
-    fontSize: '12px',
-    fontWeight: '600',
-    cursor: 'pointer',
+  deleteBtn: {
+    padding: '5px',
+    borderRadius: 'var(--radius-sm)',
+    color: 'var(--danger)',
+    opacity: 0.75,
+  },
+  skeletonCard: {
+    padding: '24px',
+    minHeight: '170px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '12px',
+  },
+  skeletonHeader: {
+    width: '40%',
+    height: '18px',
+    borderRadius: '4px',
+    backgroundColor: 'var(--glass-border)',
+  },
+  skeletonLine: {
+    width: '80%',
+    height: '24px',
+    borderRadius: '4px',
+    backgroundColor: 'var(--glass-border)',
+  },
+  skeletonLineShort: {
+    width: '50%',
+    height: '14px',
+    borderRadius: '4px',
+    backgroundColor: 'var(--glass-border-subtle)',
+    marginTop: 'auto',
+  },
+  emptyContainer: {
+    padding: '48px 24px',
+    borderRadius: 'var(--radius-xl)',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    textAlign: 'center',
+  },
+  emptyIconBox: {
+    width: '64px',
+    height: '64px',
+    borderRadius: '50%',
+    backgroundColor: 'rgba(var(--primary-rgb), 0.12)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: '16px',
+  },
+  emptyTitle: {
+    fontSize: '1.25rem',
+    fontWeight: '700',
+    color: 'var(--text-primary)',
+    marginBottom: '8px',
+  },
+  emptySubtitle: {
+    fontSize: '0.875rem',
+    color: 'var(--text-secondary)',
+    maxWidth: '460px',
+    lineHeight: '1.5',
   },
 };

@@ -1,5 +1,6 @@
 import React from 'react';
 import { useToastStore } from '../../store/toastStore.js';
+import { CheckCircle2, AlertCircle, Info, AlertTriangle, X } from 'lucide-react';
 
 export function ToastContainer() {
   const { toasts, removeToast } = useToastStore();
@@ -13,23 +14,24 @@ export function ToastContainer() {
         return (
           <div
             key={t.id}
+            className="glass-strong"
             style={{
               ...styles.toast,
-              backgroundColor: theme.bg,
-              borderColor: theme.border,
-              color: theme.color,
+              borderColor: theme.borderColor,
             }}
           >
             <div style={styles.content}>
-              <span style={styles.icon}>{theme.icon}</span>
+              <span style={{ ...styles.icon, color: theme.color }}>{theme.icon}</span>
               <span style={styles.message}>{t.message}</span>
             </div>
             <button
               onClick={() => removeToast(t.id)}
+              className="btn-ghost"
               style={styles.closeButton}
-              title="Dismiss"
+              title="Dismiss notification"
+              aria-label="Dismiss"
             >
-              ✕
+              <X size={14} />
             </button>
           </div>
         );
@@ -42,32 +44,28 @@ function getToastTheme(type) {
   switch (type) {
     case 'success':
       return {
-        bg: '#064e3b',
-        border: '#10b981',
-        color: '#ecfdf5',
-        icon: '✓',
+        color: 'var(--success)',
+        borderColor: 'rgba(34, 197, 94, 0.4)',
+        icon: <CheckCircle2 size={16} />,
       };
     case 'error':
       return {
-        bg: '#7f1d1d',
-        border: '#ef4444',
-        color: '#fef2f2',
-        icon: '✕',
+        color: 'var(--danger)',
+        borderColor: 'rgba(239, 68, 68, 0.4)',
+        icon: <AlertCircle size={16} />,
       };
     case 'warning':
       return {
-        bg: '#78350f',
-        border: '#f59e0b',
-        color: '#fffbeb',
-        icon: '⚠',
+        color: 'var(--warning)',
+        borderColor: 'rgba(245, 158, 11, 0.4)',
+        icon: <AlertTriangle size={16} />,
       };
     case 'info':
     default:
       return {
-        bg: '#1e293b',
-        border: '#38bdf8',
-        color: '#f8fafc',
-        icon: 'ℹ',
+        color: 'var(--info)',
+        borderColor: 'rgba(56, 189, 248, 0.4)',
+        icon: <Info size={16} />,
       };
   }
 }
@@ -77,47 +75,44 @@ const styles = {
     position: 'fixed',
     bottom: '24px',
     right: '24px',
+    zIndex: 9999,
     display: 'flex',
     flexDirection: 'column',
     gap: '10px',
-    zIndex: 9999,
     maxWidth: '380px',
+    pointerEvents: 'none',
   },
   toast: {
+    padding: '12px 16px',
+    borderRadius: 'var(--radius-lg)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: '12px 16px',
-    borderRadius: '8px',
-    border: '1px solid',
-    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.4)',
-    fontSize: '13px',
-    fontWeight: 500,
-    animation: 'slideIn 0.2s ease-out',
+    gap: '12px',
+    boxShadow: 'var(--glass-shadow-lg)',
+    pointerEvents: 'auto',
+    animation: 'modalContentPopIn 200ms cubic-bezier(0.16, 1, 0.3, 1)',
   },
   content: {
     display: 'flex',
     alignItems: 'center',
     gap: '10px',
-    marginRight: '12px',
+    flex: 1,
   },
   icon: {
-    fontWeight: 'bold',
-    fontSize: '14px',
+    display: 'flex',
+    alignItems: 'center',
   },
   message: {
-    lineHeight: 1.4,
-    wordBreak: 'break-word',
+    fontSize: '0.8125rem',
+    fontWeight: '500',
+    color: 'var(--text-primary)',
+    lineHeight: '1.4',
   },
   closeButton: {
-    background: 'none',
-    border: 'none',
-    color: 'inherit',
+    padding: '4px',
+    borderRadius: 'var(--radius-sm)',
+    color: 'var(--text-muted)',
     cursor: 'pointer',
-    opacity: 0.7,
-    fontSize: '14px',
-    padding: '2px 4px',
-    lineHeight: 1,
   },
 };
-

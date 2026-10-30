@@ -1,0 +1,545 @@
+/* ==========================================================================
+   CodeTogether Design Tokens & macOS Liquid Glass Styling
+   ========================================================================== */
+
+/* Inter & JetBrains Mono Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  /* Core Color Palette - Light Theme Default */
+  --primary: #4F6BF6;
+  --primary-hover: #3F57D9;
+  --primary-rgb: 79, 107, 246;
+
+  --secondary: #14B8A6;
+  --secondary-hover: #0D9488;
+  --secondary-rgb: 20, 184, 166;
+
+  --accent: #F59E0B;
+  --accent-hover: #D97706;
+
+  --success: #22C55E;
+  --warning: #F59E0B;
+  --danger: #EF4444;
+  --danger-hover: #DC2626;
+  --info: #38BDF8;
+
+  /* Typography */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /* Text Colors */
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+  --text-muted: #64748B;
+  --text-inverse: #FFFFFF;
+
+  /* Background Gradient Mesh */
+  --bg-gradient-start: #EEF2FF;
+  --bg-gradient-mid: #F0FDFA;
+  --bg-gradient-end: #FFF7ED;
+  --bg-base: #F8FAFC;
+
+  /* macOS Liquid Glass Tokens - Light */
+  --glass-bg: rgba(255, 255, 255, 0.65);
+  --glass-bg-subtle: rgba(255, 255, 255, 0.45);
+  --glass-bg-strong: rgba(255, 255, 255, 0.85);
+  --glass-input-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.8);
+  --glass-border-subtle: rgba(255, 255, 255, 0.5);
+  --glass-border-strong: rgba(255, 255, 255, 0.95);
+  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --glass-shadow: 0 8px 32px rgba(31, 38, 135, 0.08);
+  --glass-shadow-lg: 0 16px 48px rgba(31, 38, 135, 0.14);
+
+  /* macOS Traffic Light Colors */
+  --mac-close: #FF5F56;
+  --mac-minimize: #FFBD2E;
+  --mac-maximize: #27C93F;
+
+  /* Radius Tokens */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
+  --radius-full: 9999px;
+
+  /* Editor Solid Canvas (Readable without blur) */
+  --editor-bg: #FFFFFF;
+  --editor-border: rgba(226, 232, 240, 0.8);
+
+  /* Transitions */
+  --transition-fast: 150ms cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-normal: 250ms cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-bounce: 350ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Dark Theme Overrides */
+[data-theme='dark'] {
+  --primary: #7C93FF;
+  --primary-hover: #96A8FF;
+  --primary-rgb: 124, 147, 255;
+
+  --secondary: #2DD4BF;
+  --secondary-hover: #5EEAD4;
+  --secondary-rgb: 45, 212, 191;
+
+  --accent: #FBBF24;
+  --accent-hover: #FCD34D;
+
+  --success: #22C55E;
+  --warning: #FBBF24;
+  --danger: #F87171;
+  --danger-hover: #EF4444;
+  --info: #38BDF8;
+
+  /* Text Colors */
+  --text-primary: #E8ECF8;
+  --text-secondary: #9AA6C4;
+  --text-muted: #627199;
+  --text-inverse: #0B1020;
+
+  /* Background Gradient Mesh - Dark */
+  --bg-gradient-start: #0B1020;
+  --bg-gradient-mid: #111936;
+  --bg-gradient-end: #0F2A2E;
+  --bg-base: #0B1020;
+
+  /* macOS Liquid Glass Tokens - Dark */
+  --glass-bg: rgba(255, 255, 255, 0.07);
+  --glass-bg-subtle: rgba(255, 255, 255, 0.04);
+  --glass-bg-strong: rgba(17, 25, 54, 0.85);
+  --glass-input-bg: rgba(255, 255, 255, 0.06);
+  --glass-border: rgba(255, 255, 255, 0.14);
+  --glass-border-subtle: rgba(255, 255, 255, 0.08);
+  --glass-border-strong: rgba(255, 255, 255, 0.22);
+  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+  --glass-shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.65);
+
+  /* Editor Canvas */
+  --editor-bg: #111827;
+  --editor-border: rgba(255, 255, 255, 0.1);
+}
+
+/* System Preference Fallback */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --primary: #7C93FF;
+    --primary-hover: #96A8FF;
+    --primary-rgb: 124, 147, 255;
+    --secondary: #2DD4BF;
+    --secondary-hover: #5EEAD4;
+    --secondary-rgb: 45, 212, 191;
+    --accent: #FBBF24;
+    --accent-hover: #FCD34D;
+    --text-primary: #E8ECF8;
+    --text-secondary: #9AA6C4;
+    --text-muted: #627199;
+    --text-inverse: #0B1020;
+    --bg-gradient-start: #0B1020;
+    --bg-gradient-mid: #111936;
+    --bg-gradient-end: #0F2A2E;
+    --bg-base: #0B1020;
+    --glass-bg: rgba(255, 255, 255, 0.07);
+    --glass-bg-subtle: rgba(255, 255, 255, 0.04);
+    --glass-bg-strong: rgba(17, 25, 54, 0.85);
+    --glass-input-bg: rgba(255, 255, 255, 0.06);
+    --glass-border: rgba(255, 255, 255, 0.14);
+    --glass-border-subtle: rgba(255, 255, 255, 0.08);
+    --glass-border-strong: rgba(255, 255, 255, 0.22);
+    --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+    --glass-shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.65);
+    --editor-bg: #111827;
+    --editor-border: rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* ==========================================================================
+   Base Reset & Layout
+   ========================================================================== */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  min-height: 100vh;
+  font-family: var(--font-sans);
+  color: var(--text-primary);
+  background-color: var(--bg-base);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.5;
+  overflow-x: hidden;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ==========================================================================
+   Animated Gradient Mesh Background with Floating Liquid Blobs
+   ========================================================================== */
+.app-mesh-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-mid) 50%, var(--bg-gradient-end) 100%);
+  transition: background var(--transition-normal);
+}
+
+.mesh-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.65;
+  transform-origin: center;
+  will-change: transform;
+}
+
+.mesh-blob-1 {
+  width: 550px;
+  height: 550px;
+  top: -120px;
+  left: -100px;
+  background: radial-gradient(circle, rgba(var(--primary-rgb), 0.4) 0%, rgba(var(--primary-rgb), 0) 70%);
+  animation: floatSlow 22s ease-in-out infinite alternate;
+}
+
+.mesh-blob-2 {
+  width: 500px;
+  height: 500px;
+  bottom: -150px;
+  right: -100px;
+  background: radial-gradient(circle, rgba(var(--secondary-rgb), 0.35) 0%, rgba(var(--secondary-rgb), 0) 70%);
+  animation: floatReverse 26s ease-in-out infinite alternate;
+}
+
+.mesh-blob-3 {
+  width: 400px;
+  height: 400px;
+  top: 40%;
+  right: 25%;
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.25) 0%, rgba(245, 158, 11, 0) 70%);
+  animation: floatGentle 20s ease-in-out infinite alternate;
+}
+
+@keyframes floatSlow {
+  0% { transform: translate(0px, 0px) scale(1); }
+  50% { transform: translate(60px, 40px) scale(1.08); }
+  100% { transform: translate(-40px, 70px) scale(0.95); }
+}
+
+@keyframes floatReverse {
+  0% { transform: translate(0px, 0px) scale(1); }
+  50% { transform: translate(-70px, -50px) scale(1.1); }
+  100% { transform: translate(50px, -30px) scale(0.92); }
+}
+
+@keyframes floatGentle {
+  0% { transform: translate(0px, 0px) scale(0.95); }
+  100% { transform: translate(40px, -40px) scale(1.05); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mesh-blob-1, .mesh-blob-2, .mesh-blob-3 {
+    animation: none !important;
+  }
+}
+
+/* ==========================================================================
+   macOS Liquid Glass Recipes
+   ========================================================================== */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow), var(--glass-highlight);
+  border-radius: var(--radius-lg);
+  transition: all var(--transition-normal);
+}
+
+.glass-subtle {
+  background: var(--glass-bg-subtle);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  border: 1px solid var(--glass-border-subtle);
+  box-shadow: var(--glass-shadow);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-normal);
+}
+
+.glass-strong {
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(28px) saturate(190%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  border: 1px solid var(--glass-border-strong);
+  box-shadow: var(--glass-shadow-lg), var(--glass-highlight);
+  border-radius: var(--radius-xl);
+  transition: all var(--transition-normal);
+}
+
+/* Fallback for browsers lacking backdrop-filter */
+@supports not (backdrop-filter: blur(20px)) {
+  .glass { background: var(--bg-base); }
+  .glass-subtle { background: var(--bg-base); }
+  .glass-strong { background: var(--bg-base); }
+}
+
+/* Hover Lift Effect */
+.glass-hover:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--glass-shadow-lg), var(--glass-highlight);
+  border-color: var(--primary);
+}
+
+/* ==========================================================================
+   Buttons System
+   ========================================================================== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  padding: 9px 18px;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  cursor: pointer;
+  outline: none;
+  text-decoration: none;
+  user-select: none;
+  transition: all var(--transition-fast);
+}
+
+.btn:focus-visible {
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.35);
+}
+
+/* Primary Button (Gradient Indigo to Teal) */
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+  color: #FFFFFF;
+  box-shadow: 0 4px 14px rgba(var(--primary-rgb), 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  font-weight: 600;
+}
+
+.btn-primary:hover:not(:disabled) {
+  opacity: 0.95;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(var(--primary-rgb), 0.45);
+}
+
+.btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Secondary Button (Glass) */
+.btn-secondary {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  color: var(--text-primary);
+  box-shadow: var(--glass-shadow), var(--glass-highlight);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--glass-bg-strong);
+  border-color: var(--primary);
+  color: var(--primary);
+  transform: translateY(-1px);
+}
+
+/* Ghost Button */
+.btn-ghost {
+  background: transparent;
+  color: var(--text-secondary);
+  border-color: transparent;
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: var(--glass-bg-subtle);
+  color: var(--text-primary);
+}
+
+/* Danger Button */
+.btn-danger {
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--danger);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: var(--danger);
+  color: #FFFFFF;
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* ==========================================================================
+   Inputs & Form Controls
+   ========================================================================== */
+.input-glass {
+  width: 100%;
+  padding: 10px 14px;
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  background: var(--glass-input-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  outline: none;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: all var(--transition-fast);
+}
+
+.input-glass:focus {
+  border-color: var(--primary);
+  background: var(--glass-bg-strong);
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.25), inset 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.input-glass::placeholder {
+  color: var(--text-muted);
+}
+
+/* Autofill styling override for clean glass inputs */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 1000px var(--glass-bg-strong) inset !important;
+  -webkit-text-fill-color: var(--text-primary) !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* ==========================================================================
+   macOS Window Accents & Header Dots
+   ========================================================================== */
+.mac-traffic-lights {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mac-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.4), 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+.mac-dot-close { background-color: var(--mac-close); }
+.mac-dot-min { background-color: var(--mac-minimize); }
+.mac-dot-max { background-color: var(--mac-maximize); }
+
+/* ==========================================================================
+   Scrollbar & Utilities
+   ========================================================================== */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--glass-border);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Badge System */
+.badge-glass {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: var(--radius-full);
+  background: var(--glass-bg-subtle);
+  border: 1px solid var(--glass-border-subtle);
+  color: var(--text-secondary);
+}
+
+.badge-primary {
+  background: rgba(var(--primary-rgb), 0.15);
+  border-color: rgba(var(--primary-rgb), 0.3);
+  color: var(--primary);
+}
+
+.badge-secondary {
+  background: rgba(var(--secondary-rgb), 0.15);
+  border-color: rgba(var(--secondary-rgb), 0.3);
+  color: var(--secondary);
+}
+
+.badge-accent {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.3);
+  color: var(--accent);
+}
+
+/* Modal Animations */
+@keyframes modalBackdropFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modalContentPopIn {
+  from {
+    opacity: 0;
+    transform: scale(0.94) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(11, 16, 32, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: modalBackdropFadeIn 200ms ease-out;
+  padding: 16px;
+}
+
+.modal-content {
+  animation: modalContentPopIn 250ms cubic-bezier(0.16, 1, 0.3, 1);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
