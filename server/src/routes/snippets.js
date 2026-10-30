@@ -9,6 +9,7 @@ import {
 } from '../controllers/snippets.js';
 import { authenticate } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
+import { snippetLimiter } from '../middleware/rateLimit.js';
 
 const router = Router();
 
@@ -37,7 +38,7 @@ const updateSnippetSchema = z.object({
   tags: z.array(z.string().trim()).max(10).optional(),
 });
 
-router.post('/', validate(createSnippetSchema), createSnippet);
+router.post('/', snippetLimiter, validate(createSnippetSchema), createSnippet);
 router.get('/', getSnippets);
 router.get('/:id', getSnippetById);
 router.patch('/:id', validate(updateSnippetSchema), updateSnippet);

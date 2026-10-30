@@ -114,7 +114,15 @@ export default function Dashboard() {
         {error && <div style={styles.errorBox}>{error}</div>}
 
         {isLoading ? (
-          <div style={styles.loadingState}>Loading rooms...</div>
+          <div style={styles.roomGrid}>
+            {[1, 2, 3].map((i) => (
+              <div key={i} style={styles.skeletonCard}>
+                <div style={styles.skeletonHeader} />
+                <div style={styles.skeletonLine} />
+                <div style={styles.skeletonLineShort} />
+              </div>
+            ))}
+          </div>
         ) : rooms.length === 0 ? (
           <div style={styles.emptyState}>
             <div style={styles.emptyIcon}>📂</div>
@@ -342,6 +350,36 @@ const styles = {
     padding: '60px 0',
     color: '#94a3b8',
     fontSize: '15px',
+  },
+  skeletonCard: {
+    backgroundColor: '#1e293b',
+    borderRadius: '12px',
+    border: '1px solid #334155',
+    padding: '20px',
+    height: '140px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '12px',
+    opacity: 0.7,
+  },
+  skeletonHeader: {
+    height: '24px',
+    width: '60%',
+    backgroundColor: '#334155',
+    borderRadius: '4px',
+  },
+  skeletonLine: {
+    height: '16px',
+    width: '80%',
+    backgroundColor: '#273549',
+    borderRadius: '4px',
+  },
+  skeletonLineShort: {
+    height: '14px',
+    width: '40%',
+    backgroundColor: '#273549',
+    borderRadius: '4px',
+    marginTop: 'auto',
   },
   emptyState: {
     textAlign: 'center',

@@ -1,18 +1,18 @@
 # 09 — Security Checklist and Test Plan
 
 ## Security Checklist
-- [ ] bcrypt cost ≥ 10; JWT secrets from env; access 15 min, refresh 7 d httpOnly + SameSite cookie
-- [ ] `helmet`, strict CORS (`CLIENT_URL` only), JSON body limit 1 MB
-- [ ] zod validation on every REST body/query and every socket payload
-- [ ] Permission check on **every** socket event (`can(role, action)`); re-read role from DB or cached members on role change
-- [ ] Rate limits: auth routes (10/15 min/IP), chat, runs, snippet creation
-- [ ] Snippet/room queries always scoped by `userId`/membership (no IDOR)
-- [ ] Limit Yjs update size (≤ 1 MB) and document size (≤ 1 MB text) per room
-- [ ] Sanitize chat text on render (React escapes by default; never use `dangerouslySetInnerHTML`)
-- [ ] Runner env stripped of secrets; temp dirs 0700 and always removed
-- [ ] No `eval`/`vm`/`Function` with user code in server process
-- [ ] `.env` gitignored; no secrets in client bundle
-- [ ] No Docker files, no port 5000 (`grep -rn "5000\|docker" -i .`)
+- [x] bcrypt cost ≥ 10; JWT secrets from env; access 15 min, refresh 7 d httpOnly + SameSite cookie
+- [x] `helmet`, strict CORS (`CLIENT_URL` only), JSON body limit 1 MB
+- [x] zod validation on every REST body/query and every socket payload
+- [x] Permission check on **every** socket event (`can(role, action)`); re-read role from DB or cached members on role change
+- [x] Rate limits: auth routes (10/15 min/IP), chat, runs, snippet creation
+- [x] Snippet/room queries always scoped by `userId`/membership (no IDOR)
+- [x] Limit Yjs update size (≤ 1 MB) and document size (≤ 1 MB text) per room
+- [x] Sanitize chat text on render (React escapes by default; never use `dangerouslySetInnerHTML`)
+- [x] Runner env stripped of secrets; temp dirs 0700 and always removed
+- [x] No `eval`/`vm`/`Function` with user code in server process
+- [x] `.env` gitignored; no secrets in client bundle
+- [x] No Docker files, no port 5000 (`grep -rn "5000\|docker" -i .`)
 
 ## Test Plan
 **Unit (vitest):** permissions matrix, slug/token generation, zod schemas, runner output-cap and timeout logic, rate-limit window.

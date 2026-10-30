@@ -84,11 +84,11 @@ Follow doc 07 exactly.
 - **Accept:** role change takes effect live (viewer's editor becomes read-only with no refresh).
 
 ## Phase 10 — Polish and Hardening (3 days)
-- [ ] Error boundaries, toasts, loading skeletons, empty states, reconnect banner
-- [ ] Keyboard shortcuts (run, toggle chat, save snippet)
-- [ ] Responsive layout; light/dark theme
-- [ ] Security checklist and full test run (doc 09)
-- [ ] Seed script `npm run seed` with demo users and a sample room
+- [x] Error boundaries, toasts, loading skeletons, empty states, reconnect banner
+- [x] Keyboard shortcuts (run, toggle chat, save snippet)
+- [x] Responsive layout; light/dark theme
+- [x] Security checklist and full test run (doc 09)
+- [x] Seed script `npm run seed` with demo users and a sample room
 - **Accept:** demo script in PRD §7 passes end to end.
 
 ## Phase 11 — Deployment (1 day)

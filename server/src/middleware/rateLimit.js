@@ -14,3 +14,18 @@ export const authLimiter = rateLimit({
   },
 });
 
+export const snippetLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 30, // 30 snippets created per window
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: () => process.env.NODE_ENV === 'test',
+  message: {
+    error: {
+      code: 'RATE_LIMITED',
+      message: 'Too many snippets created from this IP, please try again after 15 minutes',
+    },
+  },
+});
+
+

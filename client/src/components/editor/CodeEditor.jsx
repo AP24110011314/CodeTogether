@@ -175,7 +175,7 @@ export function CodeEditor({ onEditorMount }) {
         <Editor
           height="100%"
           language={language}
-          theme={preferences.theme}
+          theme={preferences.theme === 'light' ? 'vs' : (preferences.theme || 'vs-dark')}
           onMount={handleEditorDidMount}
           options={{
             readOnly: isReadOnly,

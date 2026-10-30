@@ -10,6 +10,7 @@ export function Toolbar({
   onSaveSnippetClick,
   onInsertSnippetClick,
   onRunClick,
+  onShortcutsClick,
 }) {
   const navigate = useNavigate();
   const {
@@ -169,6 +170,13 @@ export function Toolbar({
         >
           Members ({members?.length || room?.members?.length || 1})
         </button>
+        <button
+          onClick={onShortcutsClick}
+          style={styles.shortcutsButton}
+          title="Keyboard shortcuts (?)"
+        >
+          ⌨️
+        </button>
       </div>
     </div>
   );
@@ -277,6 +285,15 @@ const styles = {
     padding: '6px 12px',
     fontSize: '12px',
     fontWeight: '500',
+    cursor: 'pointer',
+  },
+  shortcutsButton: {
+    backgroundColor: '#334155',
+    color: '#f8fafc',
+    border: '1px solid #475569',
+    borderRadius: '6px',
+    padding: '6px 10px',
+    fontSize: '12px',
     cursor: 'pointer',
   },
 };

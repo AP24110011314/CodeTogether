@@ -11,6 +11,8 @@ import { MembersModal } from '../components/room/MembersModal.jsx';
 import { SaveSnippetModal } from '../components/snippet/SaveSnippetModal.jsx';
 import { InsertSnippetModal } from '../components/snippet/InsertSnippetModal.jsx';
 import { OutputPanel } from '../components/editor/OutputPanel.jsx';
+import { ShortcutsModal } from '../components/common/ShortcutsModal.jsx';
+import { toast } from '../store/toastStore.js';
 import { getLanguagesApi, getRoomRunsApi } from '../api/runs.js';
 import { initSocket, disconnectSocket, getSocket } from '../lib/socket.js';
 
@@ -46,6 +48,7 @@ export default function Room() {
     setAvailableLanguages,
     setRunError,
     setLanguage,
+    connectionStatus,
     setConnectionStatus,
   } = useRoomStore();
 
@@ -53,6 +56,8 @@ export default function Room() {
   const [isMembersOpen, setIsMembersOpen] = useState(false);
   const [isSaveSnippetOpen, setIsSaveSnippetOpen] = useState(false);
   const [isInsertSnippetOpen, setIsInsertSnippetOpen] = useState(false);
+  const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
+  const [isSideOpen, setIsSideOpen] = useState(window.innerWidth >= 900);
   const [snippetSourceCode, setSnippetSourceCode] = useState('');
   const editorRef = useRef(null);
 
@@ -115,15 +120,51 @@ export default function Room() {
     );
   };
 
-  // Keyboard shortcuts: Cmd/Ctrl+S (Save snippet), Cmd/Ctrl+Enter (Run code)
+  const handleReconnect = () => {
+    if (accessToken) {
+      setConnectionStatus('connecting');
+      initSocket(accessToken);
+      toast.info('Reconnecting to server...');
+    }
+  };
+
+  // Resize listener for responsive layout (< 900px collapses side panel)
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 900 && isSideOpen) {
+        setIsSideOpen(false);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [isSideOpen]);
+
+  // Keyboard shortcuts: Cmd/Ctrl+S, Cmd/Ctrl+Enter, Cmd/Ctrl+B, Cmd/Ctrl+J, ?, Escape
   useEffect(() => {
     const handleKeyDown = (e) => {
+      const isInput = ['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName);
+
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
         e.preventDefault();
         handleOpenSaveSnippet();
       } else if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
         e.preventDefault();
         handleRunCode();
+      } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'b') {
+        e.preventDefault();
+        setIsSideOpen((prev) => !prev);
+      } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'j') {
+        e.preventDefault();
+        setIsBottomOpen((prev) => !prev);
+      } else if (e.key === '?' && !isInput) {
+        e.preventDefault();
+        setIsShortcutsOpen((prev) => !prev);
+      } else if (e.key === 'Escape') {
+        setIsShareOpen(false);
+        setIsMembersOpen(false);
+        setIsSaveSnippetOpen(false);
+        setIsInsertSnippetOpen(false);
+        setIsShortcutsOpen(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -338,17 +379,47 @@ export default function Room() {
 
   return (
     <div style={styles.container}>
+      {/* Reconnect Banner */}
+      {connectionStatus !== 'connected' && (
+        <div style={styles.reconnectBanner}>
+          <div style={styles.reconnectInfo}>
+            <span
+              style={{
+                ...styles.reconnectDot,
+                backgroundColor: connectionStatus === 'connecting' ? '#eab308' : '#ef4444',
+              }}
+            />
+            <span>
+              {connectionStatus === 'connecting'
+                ? 'Connecting to real-time room session...'
+                : 'Disconnected from server. Real-time updates paused.'}
+            </span>
+          </div>
+          {connectionStatus === 'disconnected' && (
+            <button onClick={handleReconnect} style={styles.reconnectButton}>
+              Reconnect Now
+            </button>
+          )}
+        </div>
+      )}
+
       <Toolbar
         onShareClick={() => setIsShareOpen(true)}
         onMembersClick={() => setIsMembersOpen(true)}
         onSaveSnippetClick={handleOpenSaveSnippet}
         onInsertSnippetClick={() => setIsInsertSnippetOpen(true)}
         onRunClick={handleRunCode}
+        onShortcutsClick={() => setIsShortcutsOpen(true)}
       />
 
       <div style={styles.workspace}>
         {/* Main Editor & Bottom Panel Area */}
-        <div style={styles.editorArea}>
+        <div
+          style={{
+            ...styles.editorArea,
+            borderRight: isSideOpen ? '1px solid #334155' : 'none',
+          }}
+        >
           <div style={styles.editorContainer}>
             <CodeEditor onEditorMount={(ed) => { editorRef.current = ed; }} />
           </div>
@@ -363,38 +434,61 @@ export default function Room() {
         </div>
 
         {/* Right Side Panel: Chat & Presence */}
-        <div style={styles.sidePanel}>
-          <div style={styles.sideHeader}>
-            <button
-              onClick={() => {
-                setSideTab('chat');
-                clearUnread();
-              }}
-              style={{
-                ...styles.sideTab,
-                ...(sideTab === 'chat' ? styles.activeSideTab : {}),
-              }}
-            >
-              <span>💬 Chat</span>
-              {unreadMessagesCount > 0 && sideTab !== 'chat' && (
-                <span style={styles.unreadBadge}>{unreadMessagesCount}</span>
-              )}
-            </button>
-            <button
-              onClick={() => setSideTab('users')}
-              style={{
-                ...styles.sideTab,
-                ...(sideTab === 'users' ? styles.activeSideTab : {}),
-              }}
-            >
-              👥 Online ({onlineCount}/{members.length || 1})
-            </button>
-          </div>
+        {isSideOpen && (
+          <div style={styles.sidePanel}>
+            <div style={styles.sideHeader}>
+              <div style={styles.sideHeaderTabs}>
+                <button
+                  onClick={() => {
+                    setSideTab('chat');
+                    clearUnread();
+                  }}
+                  style={{
+                    ...styles.sideTab,
+                    ...(sideTab === 'chat' ? styles.activeSideTab : {}),
+                  }}
+                >
+                  <span>💬 Chat</span>
+                  {unreadMessagesCount > 0 && sideTab !== 'chat' && (
+                    <span style={styles.unreadBadge}>{unreadMessagesCount}</span>
+                  )}
+                </button>
+                <button
+                  onClick={() => setSideTab('users')}
+                  style={{
+                    ...styles.sideTab,
+                    ...(sideTab === 'users' ? styles.activeSideTab : {}),
+                  }}
+                >
+                  👥 Online ({onlineCount}/{members.length || 1})
+                </button>
+              </div>
 
-          <div style={styles.sideContent}>
-            {sideTab === 'chat' ? <ChatPanel /> : <UserList />}
+              <button
+                onClick={() => setIsSideOpen(false)}
+                style={styles.sideCollapseButton}
+                title="Collapse side panel (Cmd/Ctrl+B)"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={styles.sideContent}>
+              {sideTab === 'chat' ? <ChatPanel /> : <UserList />}
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* Floating Button to open side panel when collapsed */}
+        {!isSideOpen && (
+          <button
+            onClick={() => setIsSideOpen(true)}
+            style={styles.openSideButton}
+            title="Open Chat & Users (Cmd/Ctrl+B)"
+          >
+            💬 ({onlineCount})
+          </button>
+        )}
       </div>
 
       <ShareModal isOpen={isShareOpen} onClose={() => setIsShareOpen(false)} />
@@ -410,6 +504,10 @@ export default function Room() {
         onClose={() => setIsInsertSnippetOpen(false)}
         onInsert={handleInsertSnippet}
       />
+      <ShortcutsModal
+        isOpen={isShortcutsOpen}
+        onClose={() => setIsShortcutsOpen(false)}
+      />
     </div>
   );
 }
@@ -423,6 +521,51 @@ const styles = {
     color: '#f8fafc',
     fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
     overflow: 'hidden',
+  },
+  reconnectBanner: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#7f1d1d',
+    color: '#fef2f2',
+    padding: '6px 16px',
+    fontSize: '12px',
+    borderBottom: '1px solid #ef4444',
+  },
+  reconnectInfo: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+  },
+  reconnectDot: {
+    width: '8px',
+    height: '8px',
+    borderRadius: '50%',
+  },
+  reconnectButton: {
+    backgroundColor: '#ef4444',
+    color: '#ffffff',
+    border: 'none',
+    borderRadius: '4px',
+    padding: '3px 8px',
+    fontSize: '11px',
+    fontWeight: '600',
+    cursor: 'pointer',
+  },
+  openSideButton: {
+    position: 'fixed',
+    right: '16px',
+    bottom: '70px',
+    backgroundColor: '#0284c7',
+    color: '#ffffff',
+    border: 'none',
+    borderRadius: '20px',
+    padding: '8px 14px',
+    fontSize: '12px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    zIndex: 100,
+    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)',
   },
   workspace: {
     flex: 1,
@@ -515,8 +658,25 @@ const styles = {
   },
   sideHeader: {
     display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     borderBottom: '1px solid #334155',
     backgroundColor: '#0f172a',
+    paddingRight: '6px',
+  },
+  sideHeaderTabs: {
+    display: 'flex',
+    flex: 1,
+  },
+  sideCollapseButton: {
+    background: 'none',
+    border: 'none',
+    color: '#94a3b8',
+    cursor: 'pointer',
+    padding: '6px 8px',
+    fontSize: '13px',
+    borderRadius: '4px',
+    lineHeight: 1,
   },
   sideTab: {
     flex: 1,
