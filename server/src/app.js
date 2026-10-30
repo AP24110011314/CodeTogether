@@ -6,6 +6,7 @@ import { env } from './config/env.js';
 import { errorHandler } from './middleware/error.js';
 import authRouter from './routes/auth.js';
 import roomsRouter from './routes/rooms.js';
+import snippetsRouter from './routes/snippets.js';
 
 const app = express();
 
@@ -31,6 +32,7 @@ app.get('/api/health', healthCheck);
 // API routes
 app.use('/api/auth', authRouter);
 app.use('/api/rooms', roomsRouter);
+app.use('/api/snippets', snippetsRouter);
 
 // 404 handler for undefined routes
 app.use((req, res) => {

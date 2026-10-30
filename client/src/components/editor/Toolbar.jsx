@@ -4,7 +4,12 @@ import { LanguageSelect } from './LanguageSelect.jsx';
 import { useRoomStore } from '../../store/roomStore.js';
 import { getSocket } from '../../lib/socket.js';
 
-export function Toolbar({ onShareClick, onMembersClick }) {
+export function Toolbar({
+  onShareClick,
+  onMembersClick,
+  onSaveSnippetClick,
+  onInsertSnippetClick,
+}) {
   const navigate = useNavigate();
   const {
     room,
@@ -105,6 +110,25 @@ export function Toolbar({ onShareClick, onMembersClick }) {
       </div>
 
       <div style={styles.rightGroup}>
+        <button
+          onClick={onInsertSnippetClick}
+          disabled={isViewer}
+          style={{
+            ...styles.actionButton,
+            opacity: isViewer ? 0.5 : 1,
+            cursor: isViewer ? 'not-allowed' : 'pointer',
+          }}
+          title="Insert saved snippet at cursor"
+        >
+          Insert Snippet
+        </button>
+        <button
+          onClick={onSaveSnippetClick}
+          style={styles.actionButton}
+          title="Save code as snippet (Cmd/Ctrl+S)"
+        >
+          Save Snippet
+        </button>
         <button
           disabled={isViewer}
           style={{

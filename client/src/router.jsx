@@ -4,6 +4,7 @@ import Login from './pages/Login.jsx';
 import Register from './pages/Register.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Room from './pages/Room.jsx';
+import Snippets from './pages/Snippets.jsx';
 import NotFound from './pages/NotFound.jsx';
 import { ProtectedRoute } from './components/auth/ProtectedRoute.jsx';
 
@@ -21,6 +22,14 @@ export const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <Dashboard />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/snippets',
+    element: (
+      <ProtectedRoute>
+        <Snippets />
       </ProtectedRoute>
     ),
   },

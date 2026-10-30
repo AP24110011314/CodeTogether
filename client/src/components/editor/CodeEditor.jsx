@@ -8,7 +8,7 @@ import { getSocket } from '../../lib/socket.js';
 import { SocketIOProvider } from '../../lib/SocketIOProvider.js';
 import { updateCursorStyles, cleanupCursorStyles } from '../../lib/cursorStyles.js';
 
-export function CodeEditor() {
+export function CodeEditor({ onEditorMount }) {
   const { room, language, preferences, role } = useRoomStore();
   const user = useAuthStore((state) => state.user);
   const [isSynced, setIsSynced] = useState(false);
@@ -132,6 +132,9 @@ export function CodeEditor() {
 
   const handleEditorDidMount = (editor) => {
     editorRef.current = editor;
+    if (typeof onEditorMount === 'function') {
+      onEditorMount(editor);
+    }
     setupBinding(editor);
   };
 

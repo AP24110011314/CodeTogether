@@ -98,9 +98,17 @@ export default function Dashboard() {
             </button>
           </div>
 
-          <button onClick={() => setIsModalOpen(true)} style={styles.createButton}>
-            + Create Room
-          </button>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button
+              onClick={() => navigate('/snippets')}
+              style={styles.snippetsButton}
+            >
+              📑 Saved Snippets
+            </button>
+            <button onClick={() => setIsModalOpen(true)} style={styles.createButton}>
+              + Create Room
+            </button>
+          </div>
         </div>
 
         {error && <div style={styles.errorBox}>{error}</div>}
@@ -297,6 +305,17 @@ const styles = {
   activeTab: {
     backgroundColor: '#0284c7',
     color: '#ffffff',
+  },
+  snippetsButton: {
+    padding: '10px 16px',
+    backgroundColor: '#1e293b',
+    border: '1px solid #334155',
+    color: '#38bdf8',
+    borderRadius: '8px',
+    fontSize: '14px',
+    fontWeight: '500',
+    cursor: 'pointer',
+    transition: 'background-color 0.15s ease',
   },
   createButton: {
     padding: '10px 18px',

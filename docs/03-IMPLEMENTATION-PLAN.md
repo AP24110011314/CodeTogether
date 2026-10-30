@@ -59,10 +59,10 @@ Work through phases in order. Tick every box and pass the acceptance test before
 - **Accept:** messages appear live, history persists after refresh.
 
 ## Phase 7 — Saved Snippets (2 days)
-- [ ] `Snippet` model; CRUD endpoints with search (`q`), `language`, `tag` filters, pagination
-- [ ] "Save as snippet" modal (uses selection if present else whole doc) from the room toolbar
-- [ ] `/snippets` page: list, search, filter, edit, delete, copy
-- [ ] "Insert into editor" (applies as a Yjs transaction at cursor) and "Open in new room"
+- [x] `Snippet` model; CRUD endpoints with search (`q`), `language`, `tag` filters, pagination
+- [x] "Save as snippet" modal (uses selection if present else whole doc) from the room toolbar
+- [x] `/snippets` page: list, search, filter, edit, delete, copy
+- [x] "Insert into editor" (applies as a Yjs transaction at cursor) and "Open in new room"
 - **Accept:** snippet saved in one session appears after re-login; other users cannot access it.
 
 ## Phase 8 — Code Execution Sandbox (5 days) ★ core

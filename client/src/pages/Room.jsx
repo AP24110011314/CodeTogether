@@ -8,6 +8,8 @@ import { UserList } from '../components/presence/UserList.jsx';
 import { ChatPanel } from '../components/chat/ChatPanel.jsx';
 import { ShareModal } from '../components/room/ShareModal.jsx';
 import { MembersModal } from '../components/room/MembersModal.jsx';
+import { SaveSnippetModal } from '../components/snippet/SaveSnippetModal.jsx';
+import { InsertSnippetModal } from '../components/snippet/InsertSnippetModal.jsx';
 import { initSocket, disconnectSocket, getSocket } from '../lib/socket.js';
 
 export default function Room() {
@@ -38,6 +40,51 @@ export default function Room() {
 
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isMembersOpen, setIsMembersOpen] = useState(false);
+  const [isSaveSnippetOpen, setIsSaveSnippetOpen] = useState(false);
+  const [isInsertSnippetOpen, setIsInsertSnippetOpen] = useState(false);
+  const [snippetSourceCode, setSnippetSourceCode] = useState('');
+  const editorRef = useRef(null);
+
+  const handleOpenSaveSnippet = () => {
+    let codeToSave = '';
+    if (editorRef.current) {
+      const model = editorRef.current.getModel();
+      const selection = editorRef.current.getSelection();
+      if (selection && !selection.isEmpty()) {
+        codeToSave = model.getValueInRange(selection);
+      } else if (model) {
+        codeToSave = model.getValue();
+      }
+    }
+    setSnippetSourceCode(codeToSave);
+    setIsSaveSnippetOpen(true);
+  };
+
+  const handleInsertSnippet = (code) => {
+    if (!editorRef.current) return;
+    const selection = editorRef.current.getSelection();
+    if (selection) {
+      editorRef.current.executeEdits('snippet-insert', [
+        {
+          range: selection,
+          text: code,
+          forceMoveMarkers: true,
+        },
+      ]);
+    }
+  };
+
+  // Keyboard shortcut Cmd/Ctrl+S to save snippet
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        handleOpenSaveSnippet();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Tabs for right side panel and bottom panel
   const [sideTab, setSideTab] = useState('chat'); // 'chat' | 'users'
@@ -184,13 +231,15 @@ export default function Room() {
       <Toolbar
         onShareClick={() => setIsShareOpen(true)}
         onMembersClick={() => setIsMembersOpen(true)}
+        onSaveSnippetClick={handleOpenSaveSnippet}
+        onInsertSnippetClick={() => setIsInsertSnippetOpen(true)}
       />
 
       <div style={styles.workspace}>
         {/* Main Editor & Bottom Panel Area */}
         <div style={styles.editorArea}>
           <div style={styles.editorContainer}>
-            <CodeEditor />
+            <CodeEditor onEditorMount={(ed) => { editorRef.current = ed; }} />
           </div>
 
           {/* Bottom Panel */}
@@ -306,6 +355,17 @@ export default function Room() {
 
       <ShareModal isOpen={isShareOpen} onClose={() => setIsShareOpen(false)} />
       <MembersModal isOpen={isMembersOpen} onClose={() => setIsMembersOpen(false)} />
+      <SaveSnippetModal
+        isOpen={isSaveSnippetOpen}
+        onClose={() => setIsSaveSnippetOpen(false)}
+        defaultCode={snippetSourceCode}
+        defaultLanguage={language}
+      />
+      <InsertSnippetModal
+        isOpen={isInsertSnippetOpen}
+        onClose={() => setIsInsertSnippetOpen(false)}
+        onInsert={handleInsertSnippet}
+      />
     </div>
   );
 }
