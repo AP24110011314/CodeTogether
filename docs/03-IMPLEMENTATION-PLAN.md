@@ -20,11 +20,11 @@ Work through phases in order. Tick every box and pass the acceptance test before
 - **Accept:** register → login → refresh page stays logged in → logout clears session; bad password rejected.
 
 ## Phase 2 — Rooms and Editor Shell (3 days)
-- [ ] `Room` model; endpoints: create, list mine/joined, get by slug, update, delete, invite regenerate
-- [ ] Slug via nanoid(10); invite token for private rooms
-- [ ] Dashboard page: create-room modal (name, language, visibility), room cards
-- [ ] Room page layout: top bar, Monaco editor (local only), side panel placeholders
-- [ ] Language, theme, font-size, minimap controls (persist user prefs in localStorage)
+- [x] `Room` model; endpoints: create, list mine/joined, get by slug, update, delete, invite regenerate
+- [x] Slug via nanoid(10); invite token for private rooms
+- [x] Dashboard page: create-room modal (name, language, visibility), room cards
+- [x] Room page layout: top bar, Monaco editor (local only), side panel placeholders
+- [x] Language, theme, font-size, minimap controls (persist user prefs in localStorage)
 - **Accept:** create room, open via link, edit locally, switch language/theme; private room blocks outsiders.
 
 ## Phase 3 — Socket Server and Room Sessions (2 days)

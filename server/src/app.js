@@ -5,6 +5,7 @@ import cookieParser from 'cookie-parser';
 import { env } from './config/env.js';
 import { errorHandler } from './middleware/error.js';
 import authRouter from './routes/auth.js';
+import roomsRouter from './routes/rooms.js';
 
 const app = express();
 
@@ -29,6 +30,7 @@ app.get('/api/health', healthCheck);
 
 // API routes
 app.use('/api/auth', authRouter);
+app.use('/api/rooms', roomsRouter);
 
 // 404 handler for undefined routes
 app.use((req, res) => {
