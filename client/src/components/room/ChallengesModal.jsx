@@ -256,3 +256,4 @@ const styles = {
     borderTop: '1px solid var(--glass-border-subtle)',
   },
 };
+
