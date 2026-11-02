@@ -351,29 +351,46 @@ CodeTogether/
 
 CodeTogether is pre-configured for deployment with **Render** hosting the Express/Socket.IO backend and **Vercel** hosting the React/Vite SPA.
 
-### Step 1: Deploy Backend to Render
+### Step 1: Deploy Backend Manually to Render (New Web Service)
 
-1. **Push your repository** to GitHub.
-2. Sign in to your [Render Dashboard](https://dashboard.render.com).
-3. Click **New +** → **Blueprint** and select your GitHub repository (or choose **Web Service** if deploying manually):
-   - **Root Directory**: `server`
-   - **Environment**: `Node`
+1. **Push your code** to a GitHub repository.
+2. Go to your [Render Dashboard](https://dashboard.render.com).
+3. Click the **"New +"** button at the top right and select **"Web Service"** (do NOT choose Blueprint).
+4. Connect your GitHub account and select your **CodeTogether** repository.
+5. In the Web Service configuration form, enter:
+   - **Name**: `codetogether-api` (or any unique name)
+   - **Region**: Choose the region closest to you or your database (e.g., *Oregon*, *Frankfurt*, *Singapore*)
+   - **Branch**: `main`
+   - **Root Directory**: `server` *(Important: tells Render where the backend package.json resides)*
+   - **Runtime**: `Node`
    - **Build Command**: `npm install`
    - **Start Command**: `npm start`
+   - **Instance Type**: `Free`
+6. Click **Advanced** and configure:
    - **Health Check Path**: `/api/health`
-4. Set the **Environment Variables** in Render:
-   | Key | Value / Description |
+   - **Auto-Deploy**: `Yes`
+7. In the **Environment Variables** section, click **"Add Environment Variable"** and add:
+   | Key | Value / Instructions |
    | :--- | :--- |
    | `NODE_ENV` | `production` |
-   | `PORT` | `4000` (or Render default) |
-   | `MONGODB_URI` | Your production MongoDB Atlas URI: `mongodb+srv://<user>:<password>@cluster.mongodb.net/codetogether` |
-   | `CLIENT_URL` | Your Vercel frontend URL, e.g. `https://<your-project>.vercel.app` |
-   | `JWT_ACCESS_SECRET` | 32+ character random secret string |
-   | `JWT_REFRESH_SECRET` | 32+ character random secret string |
+   | `PORT` | `4000` |
+   | `MONGODB_URI` | Your MongoDB Atlas connection URI: `mongodb+srv://<user>:<password>@cluster0.mongodb.net/codetogether?retryWrites=true&w=majority` |
+   | `CLIENT_URL` | Your frontend Vercel URL, e.g. `https://<your-project>.vercel.app` *(or `http://localhost:5173` until Vercel is deployed)* |
+   | `JWT_ACCESS_SECRET` | Generate a 32+ character random string |
+   | `JWT_REFRESH_SECRET` | Generate a 32+ character random string |
    | `GEMINI_API_KEY` | Your Google Gemini API Key |
    | `GEMINI_MODEL` | `gemini-3.5-flash` |
    | `EXECUTOR` | `local` |
-5. Click **Create Web Service**. Once deployed, copy your Render URL (e.g. `https://codetogether-api.onrender.com`).
+   | `RUN_TIMEOUT_MS` | `5000` |
+   | `RUN_MEMORY_MB` | `256` |
+   | `RUN_OUTPUT_LIMIT_KB` | `64` |
+   | `RUN_CONCURRENCY` | `2` |
+8. Click **"Create Web Service"**.
+9. Render will begin building. In 1–2 minutes, it will show a green **"Live"** badge and provide your service URL (e.g. `https://codetogether-api.onrender.com`).
+
+> **Tip**: If you prefer leaving the **Root Directory** blank (repository root), set:
+> - **Build Command**: `npm --prefix server install`
+> - **Start Command**: `npm start`
 
 > **Tip**: To seed your remote MongoDB Atlas database with the demo classrooms and accounts, run `npm run seed` locally with your Atlas `MONGODB_URI` set in `server/.env`.
 
