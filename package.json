@@ -7,10 +7,15 @@
     "dev": "concurrently -n \"server,client\" -c \"blue,green\" \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
     "dev:server": "npm run dev --prefix server",
     "dev:client": "npm run dev --prefix client",
+    "start": "npm start --prefix server",
+    "build": "npm run build --prefix client",
+    "build:client": "npm run build --prefix client",
     "seed": "npm run seed --prefix server",
     "test": "npm test --prefix server",
-    "test:ai": "npm run test:ai --prefix server",
-    "build": "npm run build --prefix client"
+    "test:ai": "npm run test:ai --prefix server"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"

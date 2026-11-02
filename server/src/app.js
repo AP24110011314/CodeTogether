@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import { env } from './config/env.js';
+import { corsOriginDelegate } from './config/cors.js';
 import { errorHandler } from './middleware/error.js';
 import authRouter from './routes/auth.js';
 import roomsRouter from './routes/rooms.js';
@@ -15,7 +16,7 @@ const app = express();
 app.use(helmet());
 app.use(
   cors({
-    origin: env.CLIENT_URL,
+    origin: corsOriginDelegate,
     credentials: true,
   })
 );

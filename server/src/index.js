@@ -4,6 +4,7 @@ import { Server } from 'socket.io';
 import app from './app.js';
 import { env } from './config/env.js';
 import { connectDB } from './config/db.js';
+import { corsOriginDelegate } from './config/cors.js';
 import { setupSockets } from './sockets/index.js';
 import logger from './utils/logger.js';
 
@@ -11,7 +12,7 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: env.CLIENT_URL,
+    origin: corsOriginDelegate,
     credentials: true,
   },
   maxHttpBufferSize: 5e6, // 5 MB (allows security guard to intercept and reject oversized payloads)
@@ -26,8 +27,8 @@ export { io, server };
 async function bootstrap() {
   try {
     await connectDB();
-    server.listen(env.PORT, () => {
-      logger.info(`Server listening on port ${env.PORT} in ${env.NODE_ENV} mode`);
+    server.listen(env.PORT, '0.0.0.0', () => {
+      logger.info(`Server listening on port ${env.PORT} on 0.0.0.0 in ${env.NODE_ENV} mode`);
       logger.info(`Allowed client URL: ${env.CLIENT_URL}`);
       if (!env.GEMINI_API_KEY) {
         logger.warn('GEMINI_API_KEY is not set in environment. AI Tutor will be disabled or return configuration errors.');

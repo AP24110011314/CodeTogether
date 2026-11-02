@@ -316,6 +316,57 @@ CodeTogether/
 
 ---
 
+## ☁️ Cloud Deployment Guide (Frontend on Vercel & Backend on Render)
+
+CodeTogether is pre-configured for deployment with **Render** hosting the Express/Socket.IO backend and **Vercel** hosting the React/Vite SPA.
+
+### Step 1: Deploy Backend to Render
+
+1. **Push your repository** to GitHub.
+2. Sign in to your [Render Dashboard](https://dashboard.render.com).
+3. Click **New +** → **Blueprint** and select your GitHub repository (or choose **Web Service** if deploying manually):
+   - **Root Directory**: `server`
+   - **Environment**: `Node`
+   - **Build Command**: `npm install`
+   - **Start Command**: `npm start`
+   - **Health Check Path**: `/api/health`
+4. Set the **Environment Variables** in Render:
+   | Key | Value / Description |
+   | :--- | :--- |
+   | `NODE_ENV` | `production` |
+   | `PORT` | `4000` (or Render default) |
+   | `MONGODB_URI` | Your production MongoDB Atlas URI: `mongodb+srv://<user>:<password>@cluster.mongodb.net/codetogether` |
+   | `CLIENT_URL` | Your Vercel frontend URL, e.g. `https://<your-project>.vercel.app` |
+   | `JWT_ACCESS_SECRET` | 32+ character random secret string |
+   | `JWT_REFRESH_SECRET` | 32+ character random secret string |
+   | `GEMINI_API_KEY` | Your Google Gemini API Key |
+   | `GEMINI_MODEL` | `gemini-3.5-flash` |
+   | `EXECUTOR` | `local` |
+5. Click **Create Web Service**. Once deployed, copy your Render URL (e.g. `https://codetogether-api.onrender.com`).
+
+> **Tip**: To seed your remote MongoDB Atlas database with the demo classrooms and accounts, run `npm run seed` locally with your Atlas `MONGODB_URI` set in `server/.env`.
+
+---
+
+### Step 2: Deploy Frontend to Vercel
+
+1. Sign in to your [Vercel Dashboard](https://vercel.com).
+2. Click **Add New...** → **Project** and import your GitHub repository.
+3. In **Project Settings**:
+   - **Framework Preset**: `Vite`
+   - **Root Directory**: Select `client` (or keep `.` as both root `vercel.json` and `client/vercel.json` handle SPA routing)
+   - **Build Command**: `npm run build`
+   - **Output Directory**: `dist`
+4. Add **Environment Variables** in Vercel:
+   | Key | Value |
+   | :--- | :--- |
+   | `VITE_API_URL` | `https://<your-render-service>.onrender.com/api` |
+   | `VITE_SOCKET_URL` | `https://<your-render-service>.onrender.com` |
+5. Click **Deploy**. Vercel will build the frontend with SPA rewrites enabled.
+6. Once deployed, copy your Vercel URL (e.g. `https://codetogether.vercel.app`) and ensure it matches the `CLIENT_URL` variable in your Render backend settings!
+
+---
+
 ## 🔒 Security Best Practices
 
 - **Sandboxed Execution**: Child processes run in isolated temporary workspaces with timeout limits (10s max), memory constraints (256MB max), and buffered stream truncations.
