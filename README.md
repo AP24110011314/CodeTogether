@@ -18,6 +18,37 @@
 
 ---
 
+---
+
+## 📸 Screenshots
+
+### Application Preview
+
+<table>
+  <tr>
+    <td align="center">
+      <strong>Dashboard</strong><br>
+      <img src="screenshots/dashboard.png" width="100%" alt="Dashboard">
+    </td>
+    <td align="center">
+      <strong>Login</strong><br>
+      <img src="screenshots/login.png" width="100%" alt="Login">
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <strong>Idle Screen</strong><br>
+      <img src="screenshots/idle.png" width="100%" alt="Idle Screen">
+    </td>
+    <td align="center">
+      <strong>Code Snippet</strong><br>
+      <img src="screenshots/snippet.png" width="100%" alt="Code Snippet">
+    </td>
+  </tr>
+</table>
+
+---
+
 ## 🛠️ Architecture & Tech Stack
 
 ```
