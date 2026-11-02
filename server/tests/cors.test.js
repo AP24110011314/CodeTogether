@@ -46,3 +46,4 @@ describe('CORS Origin Delegate for Cloud Deployment (Vercel & Render)', () => {
     expect(rejectedResult).toBe(false);
   });
 });
+

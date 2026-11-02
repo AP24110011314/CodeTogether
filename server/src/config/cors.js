@@ -45,3 +45,4 @@ export function corsOriginDelegate(origin, callback) {
   }
   return callback(null, false);
 }
+
