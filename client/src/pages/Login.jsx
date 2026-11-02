@@ -28,14 +28,17 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const from = location.state?.from?.pathname || '/';
+  const fromLocation = location.state?.from;
+  const redirectTarget = fromLocation
+    ? `${fromLocation.pathname || '/'}${fromLocation.search || ''}`
+    : '/';
 
   // Redirect if already logged in
   useEffect(() => {
     if (isInitialized && user) {
-      navigate('/', { replace: true });
+      navigate(redirectTarget, { replace: true });
     }
-  }, [user, isInitialized, navigate]);
+  }, [user, isInitialized, navigate, redirectTarget]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -54,7 +57,7 @@ export default function Login() {
 
     try {
       await login({ email: trimmedEmail, password });
-      navigate(from, { replace: true });
+      navigate(redirectTarget, { replace: true });
     } catch (err) {
       setLocalError(err.message || 'Invalid email or password');
     }
@@ -274,7 +277,7 @@ export default function Login() {
 
           <div style={styles.formFooter}>
             <span style={{ color: 'var(--text-secondary)' }}>Don't have an account?</span>{' '}
-            <Link to="/register" style={styles.registerLink}>
+            <Link to="/register" state={{ from: location.state?.from }} style={styles.registerLink}>
               Create one now
             </Link>
           </div>

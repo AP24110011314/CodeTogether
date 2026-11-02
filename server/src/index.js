@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import http from 'http';
 import { Server } from 'socket.io';
 import app from './app.js';
@@ -28,6 +29,11 @@ async function bootstrap() {
     server.listen(env.PORT, () => {
       logger.info(`Server listening on port ${env.PORT} in ${env.NODE_ENV} mode`);
       logger.info(`Allowed client URL: ${env.CLIENT_URL}`);
+      if (!env.GEMINI_API_KEY) {
+        logger.warn('GEMINI_API_KEY is not set in environment. AI Tutor will be disabled or return configuration errors.');
+      } else {
+        logger.info(`AI Tutor configured with model: ${env.GEMINI_MODEL}`);
+      }
     });
   } catch (error) {
     logger.error({ err: error }, 'Failed to start server');

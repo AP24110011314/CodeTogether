@@ -8,10 +8,12 @@
     "dev": "nodemon src/index.js",
     "start": "node src/index.js",
     "seed": "node src/seed.js",
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "test": "vitest run --fileParallelism=false",
+    "test:watch": "vitest",
+    "test:ai": "node scripts/testAi.js"
   },
   "dependencies": {
+    "@google/genai": "^2.32.0",
     "bcryptjs": "^3.0.2",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
@@ -37,4 +39,3 @@
     "vitest": "^3.0.4"
   }
 }
-

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore.js';
 import { ThemeToggle } from '../components/common/ThemeToggle.jsx';
 import {
@@ -28,13 +28,19 @@ export default function Register() {
 
   const { register, isLoading, user, isInitialized } = useAuthStore();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const fromLocation = location.state?.from;
+  const redirectTarget = fromLocation
+    ? `${fromLocation.pathname || '/'}${fromLocation.search || ''}`
+    : '/';
 
   // Redirect if already logged in
   useEffect(() => {
     if (isInitialized && user) {
-      navigate('/', { replace: true });
+      navigate(redirectTarget, { replace: true });
     }
-  }, [user, isInitialized, navigate]);
+  }, [user, isInitialized, navigate, redirectTarget]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -63,7 +69,7 @@ export default function Register() {
 
     try {
       await register({ name: trimmedName, email: trimmedEmail, password });
-      navigate('/', { replace: true });
+      navigate(redirectTarget, { replace: true });
     } catch (err) {
       setLocalError(err.message || 'Registration failed');
     }
@@ -275,7 +281,7 @@ export default function Register() {
 
           <div style={styles.formFooter}>
             <span style={{ color: 'var(--text-secondary)' }}>Already have an account?</span>{' '}
-            <Link to="/login" style={styles.loginLink}>
+            <Link to="/login" state={{ from: location.state?.from }} style={styles.loginLink}>
               Sign in instead
             </Link>
           </div>

@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore.js';
 import { getRoomsApi, deleteRoomApi } from '../api/rooms.js';
 import { CreateRoomModal } from '../components/room/CreateRoomModal.jsx';
+import { JoinClassInput } from '../components/room/JoinClassInput.jsx';
 import { ThemeToggle } from '../components/common/ThemeToggle.jsx';
 import {
   Code2,
@@ -153,6 +154,26 @@ export default function Dashboard() {
           </button>
         </section>
 
+        {/* Join Classroom by Link Card */}
+        <section className="glass dashboard-join-section" style={styles.joinSection}>
+          <div style={styles.joinHeader}>
+            <div style={styles.joinHeaderLeft}>
+              <div style={styles.joinIconBadge}>
+                <Compass size={18} style={{ color: 'var(--primary)' }} />
+              </div>
+              <div>
+                <h2 style={styles.joinTitle}>Join Classroom by Link or Code</h2>
+                <p style={styles.joinSubtitle}>
+                  Enter a full URL (e.g. http://localhost:5173/room/slug?invite=token) or workspace slug to join instantly.
+                </p>
+              </div>
+            </div>
+          </div>
+          <div style={styles.joinInputContainer}>
+            <JoinClassInput placeholder="Paste class link or code to join (e.g. /room/python-lab or room code)..." />
+          </div>
+        </section>
+
         {/* Action & Filter Toolbar */}
         <div className="dashboard-toolbar" style={styles.toolbar}>
           {/* Tabs */}
@@ -227,11 +248,15 @@ export default function Dashboard() {
                 ? 'Create your first collaborative canvas to write, run, and learn algorithms with classmates.'
                 : 'When educators or peers invite you to a room, it will appear right here.'}
             </p>
-            {activeTab === 'mine' && (
+            {activeTab === 'mine' ? (
               <button onClick={() => setIsModalOpen(true)} className="btn btn-primary" style={{ marginTop: '12px' }}>
                 <Plus size={16} />
                 <span>Create Workspace</span>
               </button>
+            ) : (
+              <div style={{ marginTop: '16px', width: '100%', maxWidth: '440px' }}>
+                <JoinClassInput placeholder="Paste class link or code to join..." variant="compact" />
+              </div>
             )}
           </div>
         ) : (
@@ -482,6 +507,50 @@ const styles = {
     padding: '12px 20px',
     fontSize: '0.9375rem',
     borderRadius: 'var(--radius-md)',
+  },
+  joinSection: {
+    padding: '20px 24px',
+    borderRadius: 'var(--radius-lg)',
+    marginBottom: '28px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '14px',
+  },
+  joinHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  joinHeaderLeft: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+  },
+  joinIconBadge: {
+    width: '36px',
+    height: '36px',
+    borderRadius: '10px',
+    backgroundColor: 'var(--glass-bg-subtle)',
+    border: '1px solid var(--glass-border-subtle)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  joinTitle: {
+    fontSize: '0.9375rem',
+    fontWeight: '700',
+    color: 'var(--text-primary)',
+    margin: 0,
+  },
+  joinSubtitle: {
+    fontSize: '0.78125rem',
+    color: 'var(--text-secondary)',
+    margin: '2px 0 0',
+  },
+  joinInputContainer: {
+    width: '100%',
+    maxWidth: '680px',
   },
   toolbar: {
     display: 'flex',

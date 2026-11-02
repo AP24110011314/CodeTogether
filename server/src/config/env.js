@@ -17,6 +17,8 @@ const envSchema = z.object({
   RUN_CONCURRENCY: z.coerce.number().default(2),
   JUDGE0_URL: z.string().optional(),
   JUDGE0_KEY: z.string().optional(),
+  GEMINI_API_KEY: z.string().optional(),
+  GEMINI_MODEL: z.string().default('gemini-3.5-flash'),
 });
 
 const parsed = envSchema.safeParse(process.env);

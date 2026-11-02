@@ -8,6 +8,7 @@ import authRouter from './routes/auth.js';
 import roomsRouter from './routes/rooms.js';
 import snippetsRouter from './routes/snippets.js';
 import runsRouter from './routes/runs.js';
+import aiTutorRouter from './routes/aiTutor.js';
 
 const app = express();
 
@@ -35,6 +36,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/rooms', roomsRouter);
 app.use('/api/snippets', snippetsRouter);
 app.use('/api/runs', runsRouter);
+app.use('/api/ai-tutor', aiTutorRouter);
 
 // 404 handler for undefined routes
 app.use((req, res) => {
