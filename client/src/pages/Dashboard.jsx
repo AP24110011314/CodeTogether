@@ -46,6 +46,10 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
+    document.title = 'Dashboard — CodeTogether';
+  }, []);
+
+  useEffect(() => {
     fetchRooms(activeTab);
   }, [activeTab]);
 
@@ -87,7 +91,7 @@ export default function Dashboard() {
             <Code2 size={20} style={{ color: '#FFFFFF' }} />
           </div>
           <div>
-            <span style={styles.brandTitle}>CodeTogether</span>
+            <span className="dashboard-brand-title" style={styles.brandTitle}>CodeTogether</span>
             <span className="badge-glass badge-primary desktop-only" style={{ marginLeft: '8px', fontSize: '0.6875rem' }}>
               Labs
             </span>
@@ -105,6 +109,16 @@ export default function Dashboard() {
         </div>
 
         <div style={styles.navRight}>
+          <Link
+            to="/snippets"
+            className="btn btn-secondary"
+            style={{ padding: '6px 10px', fontSize: '0.75rem', height: '32px', gap: '5px', textDecoration: 'none' }}
+            title="Browse Saved Snippets"
+          >
+            <Bookmark size={14} />
+            <span className="desktop-only">Snippets</span>
+          </Link>
+
           <ThemeToggle />
 
           <div style={styles.userProfile}>
@@ -220,7 +234,7 @@ export default function Dashboard() {
 
         {/* Workspaces Grid */}
         {isLoading ? (
-          <div style={styles.grid}>
+          <div className="dashboard-grid" style={styles.grid}>
             {[1, 2, 3, 4, 5, 6].map((idx) => (
               <div key={idx} className="glass" style={styles.skeletonCard}>
                 <div style={styles.skeletonHeader} />
@@ -260,7 +274,7 @@ export default function Dashboard() {
             )}
           </div>
         ) : (
-          <div style={styles.grid}>
+          <div className="dashboard-grid" style={styles.grid}>
             {filteredRooms.map((room) => {
               const isOwner = (room.ownerId?._id || room.ownerId?.id || room.ownerId) === user?.id;
               const memberCount = room.members?.length || 1;

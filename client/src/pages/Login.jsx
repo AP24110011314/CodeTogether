@@ -33,6 +33,10 @@ export default function Login() {
     ? `${fromLocation.pathname || '/'}${fromLocation.search || ''}`
     : '/';
 
+  useEffect(() => {
+    document.title = 'Sign In — CodeTogether';
+  }, []);
+
   // Redirect if already logged in
   useEffect(() => {
     if (isInitialized && user) {
@@ -71,9 +75,9 @@ export default function Login() {
 
   return (
     <div style={styles.pageWrapper}>
-      <div className="glass-strong" style={styles.cardContainer}>
+      <div className="glass-strong auth-card-container" style={styles.cardContainer}>
         {/* LEFT PANEL: Educational Brand & macOS Window Preview */}
-        <div style={styles.brandPanel}>
+        <div className="auth-brand-panel" style={styles.brandPanel}>
           <div style={styles.brandHeader}>
             <div style={styles.logoBadge}>
               <Code2 size={24} style={{ color: '#FFFFFF' }} />
@@ -135,11 +139,16 @@ export default function Login() {
         </div>
 
         {/* RIGHT PANEL: Sign-In Form */}
-        <div style={styles.formPanel}>
+        <div className="auth-form-panel" style={styles.formPanel}>
           <div style={styles.formTopBar}>
-            <span style={styles.welcomePill}>
-              <Sparkles size={14} style={{ color: 'var(--accent)' }} /> Welcome Back
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ ...styles.logoBadge, width: '28px', height: '28px', borderRadius: '8px' }}>
+                <Code2 size={15} style={{ color: '#FFFFFF' }} />
+              </div>
+              <span style={styles.welcomePill}>
+                <Sparkles size={13} style={{ color: 'var(--accent)' }} /> Welcome Back
+              </span>
+            </div>
             <ThemeToggle />
           </div>
 

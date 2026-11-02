@@ -1,8 +1,12 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Compass, ArrowLeft } from 'lucide-react';
 
 export default function NotFound() {
+  useEffect(() => {
+    document.title = '404 Not Found — CodeTogether';
+  }, []);
+
   return (
     <div style={styles.container}>
       <div className="glass-strong" style={styles.card}>

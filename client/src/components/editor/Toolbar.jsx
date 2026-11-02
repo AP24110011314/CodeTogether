@@ -88,12 +88,12 @@ export function Toolbar({
           <ArrowLeft size={16} />
         </button>
 
-        <span style={styles.roomName} title={room?.name}>
+        <span className="toolbar-room-name" style={styles.roomName} title={room?.name}>
           {room?.name || 'Workspace'}
         </span>
 
         <span
-          className="badge-glass"
+          className="badge-glass toolbar-role-badge"
           style={{
             backgroundColor:
               role === 'owner'

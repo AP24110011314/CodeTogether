@@ -35,6 +35,10 @@ export default function Register() {
     ? `${fromLocation.pathname || '/'}${fromLocation.search || ''}`
     : '/';
 
+  useEffect(() => {
+    document.title = 'Join Platform — CodeTogether';
+  }, []);
+
   // Redirect if already logged in
   useEffect(() => {
     if (isInitialized && user) {
@@ -77,9 +81,9 @@ export default function Register() {
 
   return (
     <div style={styles.pageWrapper}>
-      <div className="glass-strong" style={styles.cardContainer}>
+      <div className="glass-strong auth-card-container" style={styles.cardContainer}>
         {/* LEFT PANEL: Educational Value */}
-        <div style={styles.brandPanel}>
+        <div className="auth-brand-panel" style={styles.brandPanel}>
           <div style={styles.brandHeader}>
             <div style={styles.logoBadge}>
               <Code2 size={24} style={{ color: '#FFFFFF' }} />
@@ -141,11 +145,16 @@ export default function Register() {
         </div>
 
         {/* RIGHT PANEL: Sign-Up Form */}
-        <div style={styles.formPanel}>
+        <div className="auth-form-panel" style={styles.formPanel}>
           <div style={styles.formTopBar}>
-            <span style={styles.welcomePill}>
-              <Sparkles size={14} style={{ color: 'var(--secondary)' }} /> Get Started Free
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ ...styles.logoBadge, width: '28px', height: '28px', borderRadius: '8px' }}>
+                <Code2 size={15} style={{ color: '#FFFFFF' }} />
+              </div>
+              <span style={styles.welcomePill}>
+                <Sparkles size={13} style={{ color: 'var(--secondary)' }} /> Get Started Free
+              </span>
+            </div>
             <ThemeToggle />
           </div>
 

@@ -15,7 +15,7 @@ import {
   Loader2,
 } from 'lucide-react';
 
-export function OutputPanel({ isBottomOpen, setIsBottomOpen, bottomTab, setBottomTab }) {
+export function OutputPanel({ isBottomOpen, setIsBottomOpen, bottomTab, setBottomTab, isMobileFullHeight = false }) {
   const {
     runs,
     activeRun,
@@ -106,7 +106,8 @@ export function OutputPanel({ isBottomOpen, setIsBottomOpen, bottomTab, setBotto
       className="glass"
       style={{
         ...styles.bottomPanel,
-        height: isBottomOpen ? '250px' : '40px',
+        height: isMobileFullHeight ? '100%' : isBottomOpen ? '250px' : '40px',
+        flex: isMobileFullHeight ? 1 : 'none',
       }}
     >
       {/* Header bar */}

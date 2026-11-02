@@ -82,6 +82,15 @@ export default function Room() {
   const [bottomTab, setBottomTab] = useState('output'); // 'output' | 'stdin' | 'history'
   const [isBottomOpen, setIsBottomOpen] = useState(false);
   const [mobileView, setMobileView] = useState('code'); // 'code' | 'console' | 'chat' | 'ai' | 'users'
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
+
+  useEffect(() => {
+    if (room?.name) {
+      document.title = `${room.name} — CodeTogether`;
+    } else {
+      document.title = 'Workspace — CodeTogether';
+    }
+  }, [room?.name]);
 
   const editorRef = useRef(null);
   const sideTabRef = useRef(sideTab);
@@ -222,9 +231,11 @@ export default function Room() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [role, room?.id, stdin, user]);
 
-  // Responsive auto-collapse under 900px
+  // Responsive auto-collapse under 900px & mobile detection
   useEffect(() => {
     const handleResize = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
       if (window.innerWidth < 900) {
         setIsSideOpen(false);
       } else {
@@ -366,6 +377,9 @@ export default function Room() {
       addRun(result);
       setBottomTab('output');
       setIsBottomOpen(true);
+      if (window.innerWidth < 768) {
+        setMobileView('console');
+      }
     });
 
     return () => {
@@ -500,46 +514,50 @@ export default function Room() {
       {/* Main Workspace Frame */}
       <div style={styles.workspace}>
         {/* Main Editor & Output Panel Area */}
-        <div
-          style={{
-            ...styles.editorArea,
-            display:
-              window.innerWidth < 768 && mobileView !== 'code' && mobileView !== 'console'
-                ? 'none'
-                : 'flex',
-          }}
-        >
-          <div style={styles.editorContainer}>
-            <CodeEditor onEditorMount={(ed) => { editorRef.current = ed; }} />
+        {(!isMobile || mobileView === 'code' || mobileView === 'console') && (
+          <div style={styles.editorArea}>
+            <div
+              style={{
+                ...styles.editorContainer,
+                display: isMobile && mobileView === 'console' ? 'none' : 'block',
+              }}
+            >
+              <CodeEditor onEditorMount={(ed) => { editorRef.current = ed; }} />
+            </div>
+
+            {/* Status Bar */}
+            {(!isMobile || mobileView === 'code') && (
+              <StatusBar
+                language={language}
+                getEditorInstance={() => editorRef.current}
+              />
+            )}
+
+            {/* Bottom Execution Console */}
+            {(!isMobile || mobileView === 'console') && (
+              <OutputPanel
+                isBottomOpen={isBottomOpen || (isMobile && mobileView === 'console')}
+                setIsBottomOpen={(open) => {
+                  setIsBottomOpen(open);
+                  if (!open && mobileView === 'console') {
+                    setMobileView('code');
+                  }
+                }}
+                bottomTab={bottomTab}
+                setBottomTab={setBottomTab}
+                isMobileFullHeight={isMobile && mobileView === 'console'}
+              />
+            )}
           </div>
-
-          {/* Status Bar */}
-          <StatusBar
-            language={language}
-            getEditorInstance={() => editorRef.current}
-          />
-
-          {/* Bottom Execution Console */}
-          <OutputPanel
-            isBottomOpen={isBottomOpen || (window.innerWidth < 768 && mobileView === 'console')}
-            setIsBottomOpen={(open) => {
-              setIsBottomOpen(open);
-              if (!open && mobileView === 'console') {
-                setMobileView('code');
-              }
-            }}
-            bottomTab={bottomTab}
-            setBottomTab={setBottomTab}
-          />
-        </div>
+        )}
 
         {/* Right Side Panel: Chat / Participants / AI Mentor */}
-        {(isSideOpen || (window.innerWidth < 768 && (mobileView === 'chat' || mobileView === 'ai' || mobileView === 'users'))) && (
+        {((!isMobile && isSideOpen) || (isMobile && (mobileView === 'chat' || mobileView === 'ai' || mobileView === 'users'))) && (
           <aside
-            className="glass"
+            className={`glass ${isMobile ? 'room-side-panel-mobile' : ''}`}
             style={{
               ...styles.sidePanel,
-              ...(window.innerWidth < 768 ? styles.mobileSidePanel : {}),
+              ...(isMobile ? styles.mobileSidePanel : {}),
             }}
           >
             <div style={styles.sideHeader}>
@@ -801,7 +819,10 @@ const styles = {
   },
   mobileSidePanel: {
     position: 'absolute',
-    inset: 0,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 'calc(56px + env(safe-area-inset-bottom, 0px))',
     width: '100%',
     zIndex: 900,
     borderLeft: 'none',

@@ -70,6 +70,10 @@ export default function Snippets() {
   };
 
   useEffect(() => {
+    document.title = 'Snippets — CodeTogether';
+  }, []);
+
+  useEffect(() => {
     fetchSnippets();
   }, [page, selectedLang, selectedTag]);
 
@@ -266,7 +270,7 @@ export default function Snippets() {
 
         {/* Snippets Grid */}
         {isLoading ? (
-          <div style={styles.grid}>
+          <div className="snippets-grid" style={styles.grid}>
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <div key={i} className="glass" style={styles.skeletonCard}>
                 <div style={styles.skeletonHeader} />
@@ -291,7 +295,7 @@ export default function Snippets() {
             </button>
           </div>
         ) : (
-          <div style={styles.grid}>
+          <div className="snippets-grid" style={styles.grid}>
             {snippets.map((s) => (
               <div key={s._id} className="glass glass-hover" style={styles.card}>
                 {/* macOS Card Top Header */}

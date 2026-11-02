@@ -59,10 +59,10 @@ export function StatusBar({ language = 'javascript', getEditorInstance }) {
           <span style={styles.syncDot} />
           <span>CRDT Synced</span>
         </div>
-        <span style={styles.divider}>•</span>
-        <span style={styles.infoItem}>UTF-8</span>
-        <span style={styles.divider}>•</span>
-        <span style={styles.infoItem}>Spaces: 2</span>
+        <span style={styles.divider} className="desktop-only">•</span>
+        <span style={styles.infoItem} className="desktop-only">UTF-8</span>
+        <span style={styles.divider} className="desktop-only">•</span>
+        <span style={styles.infoItem} className="desktop-only">Spaces: 2</span>
         <span style={styles.divider}>•</span>
         <span style={{ ...styles.infoItem, textTransform: 'capitalize' }}>
           {language} Runtime
@@ -77,7 +77,7 @@ export function StatusBar({ language = 'javascript', getEditorInstance }) {
           title="Format Document (Shift+Alt+F)"
         >
           <Wand2 size={12} />
-          <span>Format</span>
+          <span className="desktop-only">Format</span>
         </button>
 
         <button
@@ -87,7 +87,7 @@ export function StatusBar({ language = 'javascript', getEditorInstance }) {
           title="Copy full document"
         >
           {copied ? <Check size={12} style={{ color: 'var(--success)' }} /> : <Copy size={12} />}
-          <span>{copied ? 'Copied' : 'Copy'}</span>
+          <span className="desktop-only">{copied ? 'Copied' : 'Copy'}</span>
         </button>
 
         <button
@@ -97,7 +97,7 @@ export function StatusBar({ language = 'javascript', getEditorInstance }) {
           title="Download code file"
         >
           <Download size={12} />
-          <span>Export</span>
+          <span className="desktop-only">Export</span>
         </button>
       </div>
     </footer>

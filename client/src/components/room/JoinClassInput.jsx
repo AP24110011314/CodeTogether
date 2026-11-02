@@ -157,6 +157,7 @@ const styles = {
   inputWrapper: {
     position: 'relative',
     flex: 1,
+    minWidth: 0,
     display: 'flex',
     alignItems: 'center',
   },

@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" fill="none">
+  <defs>
+    <linearGradient id="ct-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4F6BF6" />
+      <stop offset="50%" stop-color="#3B82F6" />
+      <stop offset="100%" stop-color="#14B8A6" />
+    </linearGradient>
+    <linearGradient id="ct-glow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.9" />
+      <stop offset="100%" stop-color="#E0F2FE" stop-opacity="0.7" />
+    </linearGradient>
+    <filter id="ct-shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#4F6BF6" flood-opacity="0.35" />
+    </filter>
+  </defs>
+
+  <!-- macOS Squircle App Icon Base -->
+  <rect x="2" y="2" width="60" height="60" rx="16" fill="url(#ct-grad)" filter="url(#ct-shadow)" />
+
+  <!-- Subtle Top Highlight Border -->
+  <rect x="2" y="2" width="60" height="60" rx="16" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" />
+
+  <!-- Collaborative Coding Brackets & Synergy Core -->
+  <g stroke="url(#ct-glow)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Left Bracket < -->
+    <path d="M22 22 L13 32 L22 42" />
+
+    <!-- Right Bracket > -->
+    <path d="M42 22 L51 32 L42 42" />
+
+    <!-- Central Collaboration Forward Slash / -->
+    <path d="M35 19 L29 45" stroke="#FBBF24" stroke-width="4" />
+  </g>
+
+  <!-- Realtime Peer Collaboration Nodes -->
+  <circle cx="13" cy="32" r="3" fill="#60A5FA" />
+  <circle cx="51" cy="32" r="3" fill="#2DD4BF" />
+  <circle cx="32" cy="32" r="2.5" fill="#FFFFFF" />
+</svg>
