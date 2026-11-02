@@ -132,3 +132,4 @@ describe('Join Class by Link & Code API (POST /api/rooms/join)', () => {
     expect(res.body.role).toBe('editor');
   });
 });
+

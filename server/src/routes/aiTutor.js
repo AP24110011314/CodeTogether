@@ -27,3 +27,4 @@ const chatSchema = z.object({
 router.post('/chat', authenticate, aiTutorLimiter, validate(chatSchema), handleAiTutorChat);
 
 export default router;
+

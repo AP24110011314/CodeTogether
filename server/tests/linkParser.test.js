@@ -66,3 +66,4 @@ describe('Client Link & Code Parser (parseClassLinkOrCode)', () => {
     expect(parseClassLinkOrCode('http://invalid space url/')).toBeNull();
   });
 });
+
