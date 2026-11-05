@@ -63,7 +63,11 @@ export default function Login() {
       await login({ email: trimmedEmail, password });
       navigate(redirectTarget, { replace: true });
     } catch (err) {
-      setLocalError(err.message || 'Invalid email or password');
+      if (err.message?.includes('Network Error') || err.code === 'ERR_NETWORK' || err.message?.includes('timeout')) {
+        setLocalError('Unable to connect to the backend server. If using Render Free Tier, the server may be waking up (~30-50s). Please wait a moment and retry.');
+      } else {
+        setLocalError(err.message || 'Invalid email or password');
+      }
     }
   };
 

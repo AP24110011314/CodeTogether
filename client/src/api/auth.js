@@ -11,12 +11,18 @@ export async function loginApi(data) {
 }
 
 export async function refreshApi() {
-  const response = await http.post('/auth/refresh');
+  const storedToken = typeof window !== 'undefined'
+    ? localStorage.getItem('codetogether_refresh_token')
+    : null;
+  const response = await http.post('/auth/refresh', { refreshToken: storedToken });
   return response.data;
 }
 
 export async function logoutApi() {
-  const response = await http.post('/auth/logout');
+  const storedToken = typeof window !== 'undefined'
+    ? localStorage.getItem('codetogether_refresh_token')
+    : null;
+  const response = await http.post('/auth/logout', { refreshToken: storedToken });
   return response.data;
 }
 

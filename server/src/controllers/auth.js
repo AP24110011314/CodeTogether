@@ -64,6 +64,7 @@ export async function register(req, res, next) {
     return res.status(201).json({
       user,
       accessToken,
+      refreshToken,
     });
   } catch (error) {
     next(error);
@@ -102,6 +103,7 @@ export async function login(req, res, next) {
     return res.status(200).json({
       user,
       accessToken,
+      refreshToken,
     });
   } catch (error) {
     next(error);
@@ -110,12 +112,12 @@ export async function login(req, res, next) {
 
 export async function refresh(req, res, next) {
   try {
-    const token = req.cookies[REFRESH_COOKIE_NAME];
+    const token = req.cookies[REFRESH_COOKIE_NAME] || req.body?.refreshToken;
     if (!token) {
       return res.status(401).json({
         error: {
           code: 'UNAUTHORIZED',
-          message: 'Refresh token cookie missing',
+          message: 'Refresh token cookie or payload missing',
         },
       });
     }
@@ -160,6 +162,7 @@ export async function refresh(req, res, next) {
     res.cookie(REFRESH_COOKIE_NAME, newRefreshToken, getCookieOptions());
     return res.status(200).json({
       accessToken,
+      refreshToken: newRefreshToken,
     });
   } catch (error) {
     next(error);
@@ -168,7 +171,7 @@ export async function refresh(req, res, next) {
 
 export async function logout(req, res, next) {
   try {
-    const token = req.cookies[REFRESH_COOKIE_NAME];
+    const token = req.cookies[REFRESH_COOKIE_NAME] || req.body?.refreshToken;
     if (token) {
       try {
         const decoded = jwt.verify(token, env.JWT_REFRESH_SECRET);

@@ -1,6 +1,15 @@
 import { io } from 'socket.io-client';
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:4000';
+export function getSocketServerUrl() {
+  let url = import.meta.env.VITE_SOCKET_URL || import.meta.env.VITE_API_URL || 'http://localhost:4000';
+  url = url.trim().replace(/\/+$/, '');
+  if (url.endsWith('/api')) {
+    url = url.slice(0, -4);
+  }
+  return url;
+}
+
+const SOCKET_URL = getSocketServerUrl();
 
 let socket = null;
 

@@ -1,9 +1,23 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+export function getBaseApiUrl() {
+  let url = import.meta.env.VITE_API_URL;
+  if (!url) {
+    return 'http://localhost:4000/api';
+  }
+  url = url.trim().replace(/\/+$/, '');
+  // Normalize if user omitted /api
+  if (!url.endsWith('/api')) {
+    url = `${url}/api`;
+  }
+  return url;
+}
+
+const API_BASE_URL = getBaseApiUrl();
 
 export const http = axios.create({
   baseURL: API_BASE_URL,
+  timeout: 15000,
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
@@ -75,12 +89,23 @@ http.interceptors.response.use(
     isRefreshing = true;
 
     try {
+      const storedRefreshToken = typeof window !== 'undefined'
+        ? localStorage.getItem('codetogether_refresh_token')
+        : null;
+
       const response = await axios.post(
         `${API_BASE_URL}/auth/refresh`,
-        {},
-        { withCredentials: true }
+        { refreshToken: storedRefreshToken },
+        { withCredentials: true, timeout: 15000 }
       );
-      const { accessToken } = response.data;
+      const { accessToken, refreshToken: newRefreshToken } = response.data;
+
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('codetogether_access_token', accessToken);
+        if (newRefreshToken) {
+          localStorage.setItem('codetogether_refresh_token', newRefreshToken);
+        }
+      }
 
       const store = getAuthStoreState();
       if (store?.setAccessToken) {
@@ -91,6 +116,11 @@ http.interceptors.response.use(
       originalRequest.headers.Authorization = `Bearer ${accessToken}`;
       return http(originalRequest);
     } catch (refreshError) {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('codetogether_access_token');
+        localStorage.removeItem('codetogether_refresh_token');
+        localStorage.removeItem('codetogether_user_cache');
+      }
       processQueue(refreshError, null);
       const store = getAuthStoreState();
       if (store?.clearAuth) {
